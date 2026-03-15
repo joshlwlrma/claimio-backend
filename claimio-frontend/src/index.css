@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased bg-landing-dark text-white;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  }
+}
+
+@layer components {
+
+  /* Container overrides to match previous layouts */
+  .container {
+    @apply w-full max-w-[1200px] mx-auto px-8;
+  }
+
+  /* Typography */
+  .font-playfair {
+    font-family: 'Playfair Display', serif;
+  }
+}
