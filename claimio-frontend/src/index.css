@@ -14,9 +14,11 @@
   .dark-scroll::-webkit-scrollbar {
     width: 6px;
   }
+
   .dark-scroll::-webkit-scrollbar-track {
     background: transparent;
   }
+
   .dark-scroll::-webkit-scrollbar-thumb {
     background: #2E2E2E;
     border-radius: 3px;
@@ -36,21 +38,27 @@
   .badge {
     @apply inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider;
   }
+
   .badge-lost {
     @apply bg-red-500 text-white;
   }
+
   .badge-found {
     @apply bg-emerald-500 text-white;
   }
+
   .badge-pending {
     @apply bg-accent text-black;
   }
+
   .badge-matched {
     @apply bg-blue-500 text-white;
   }
+
   .badge-claimed {
     @apply bg-gray-500 text-white;
   }
+
   .badge-returned {
     @apply bg-purple-500 text-white;
   }

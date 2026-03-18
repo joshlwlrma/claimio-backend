@@ -169,31 +169,28 @@ const Dashboard = () => {
                     <div className="flex gap-2">
                         <button
                             onClick={() => handleTabChange('all')}
-                            className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${
-                                activeTab === 'all'
+                            className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${activeTab === 'all'
                                     ? 'bg-accent text-black'
                                     : 'text-text-muted hover:text-text-dark'
-                            }`}
+                                }`}
                         >
                             All Items
                         </button>
                         <button
                             onClick={() => handleTabChange('found')}
-                            className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${
-                                activeTab === 'found'
+                            className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${activeTab === 'found'
                                     ? 'bg-accent text-black'
                                     : 'text-text-muted hover:text-text-dark'
-                            }`}
+                                }`}
                         >
                             Found
                         </button>
                         <button
                             onClick={() => handleTabChange('lost')}
-                            className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${
-                                activeTab === 'lost'
+                            className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${activeTab === 'lost'
                                     ? 'bg-accent text-black'
                                     : 'text-text-muted hover:text-text-dark'
-                            }`}
+                                }`}
                         >
                             Lost
                         </button>
@@ -260,11 +257,10 @@ const Dashboard = () => {
                                 <button
                                     onClick={handlePrevPage}
                                     disabled={currentPage === 1}
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                                        currentPage === 1
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${currentPage === 1
                                             ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
                                             : 'bg-card text-white hover:bg-accent hover:text-black cursor-pointer'
-                                    }`}
+                                        }`}
                                 >
                                     <ChevronLeft size={20} />
                                 </button>
@@ -276,11 +272,10 @@ const Dashboard = () => {
                                 <button
                                     onClick={handleNextPage}
                                     disabled={currentPage === meta.last_page}
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                                        currentPage === meta.last_page
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${currentPage === meta.last_page
                                             ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
                                             : 'bg-card text-white hover:bg-accent hover:text-black cursor-pointer'
-                                    }`}
+                                        }`}
                                 >
                                     <ChevronRight size={20} />
                                 </button>

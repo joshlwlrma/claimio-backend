@@ -32,21 +32,19 @@ const UserBar = () => {
                     <div className="hidden md:flex items-center gap-1">
                         <Link
                             to="/dashboard"
-                            className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${
-                                isActive('/dashboard')
+                            className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${isActive('/dashboard')
                                     ? 'bg-accent text-black'
                                     : 'text-text-muted hover:text-white'
-                            }`}
+                                }`}
                         >
                             Dashboard
                         </Link>
                         <Link
                             to="/admin"
-                            className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${
-                                isActive('/admin')
+                            className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${isActive('/admin')
                                     ? 'bg-accent text-black'
                                     : 'text-text-muted hover:text-white'
-                            }`}
+                                }`}
                         >
                             Reports
                         </Link>

@@ -107,6 +107,25 @@ class AdminController extends Controller
                 });
             }
 
+            // Period-based filtering
+            if ($request->has('period') && $request->period && $request->period !== 'all') {
+                $now = \Carbon\Carbon::now();
+                switch ($request->period) {
+                    case 'weekly':
+                        $query->where('created_at', '>=', $now->copy()->subDays(7));
+                        break;
+                    case 'monthly':
+                        $query->where('created_at', '>=', $now->copy()->subDays(30));
+                        break;
+                    case 'semestral':
+                        $query->where('created_at', '>=', $now->copy()->subMonths(6));
+                        break;
+                    case 'custom':
+                        // Falls through to date_from/date_to below
+                        break;
+                }
+            }
+
             // Date range filter
             if ($request->has('date_from') && $request->date_from) {
                 $query->whereDate('created_at', '>=', $request->date_from);

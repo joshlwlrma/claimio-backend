@@ -50,6 +50,7 @@ const AdminDashboard = () => {
     const [exportDateFrom, setExportDateFrom] = useState('');
     const [exportDateTo, setExportDateTo] = useState('');
     const [exportPreview, setExportPreview] = useState([]);
+    const [exportPreviewMeta, setExportPreviewMeta] = useState(null);
     const [exportLoading, setExportLoading] = useState(false);
 
     // Matches state
@@ -145,6 +146,37 @@ const AdminDashboard = () => {
         }
     }, [adminTab, fetchMatches]);
 
+    // Fetch export preview when filters change
+    useEffect(() => {
+        if (adminTab !== 'export') return;
+        
+        const fetchPreview = async () => {
+            try {
+                setExportLoading(true);
+                const params = { page: 1 };
+                if (exportPeriod && exportPeriod !== 'all') params.period = exportPeriod;
+                if (exportPeriod === 'custom') {
+                    if (exportDateFrom) params.date_from = exportDateFrom;
+                    if (exportDateTo) params.date_to = exportDateTo;
+                }
+                
+                const { data } = await api.get('/admin/reports', { params });
+                setExportPreview(data.data);
+                setExportPreviewMeta(data.meta);
+            } catch (err) {
+                console.error('Error fetching export preview:', err);
+            } finally {
+                setExportLoading(false);
+            }
+        };
+        
+        const debounce = setTimeout(() => {
+            fetchPreview();
+        }, 300); // 300ms debounce
+        
+        return () => clearTimeout(debounce);
+    }, [adminTab, exportPeriod, exportDateFrom, exportDateTo]);
+
     const handlePageChange = (page) => {
         setCurrentPage(page);
         fetchReports(page);
@@ -202,18 +234,18 @@ const AdminDashboard = () => {
     // ── Render ───────────────────────────────────────
 
     return (
-        <div className="min-h-screen bg-page font-sans text-white">
+        <div className="min-h-screen bg-page font-sans text-text-dark">
             <UserBar />
 
             <main className="container mx-auto px-4 py-8">
 
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold tracking-wide uppercase text-white mb-2">
+                    <h1 className="text-3xl font-bold tracking-wide uppercase text-text-dark mb-2">
                         Admin Dashboard
                     </h1>
                     <p className="text-text-muted">
-                        Welcome back, <span className="font-semibold text-white">Admin</span>! Manage reports, review claims, and monitor activity.
+                        Welcome back, <span className="font-semibold text-text-dark">Admin</span>! Manage reports, review claims, and monitor activity.
                     </p>
                 </div>
 
@@ -327,7 +359,7 @@ const AdminDashboard = () => {
                                             onClick={() => setSelectedReport(report)}
                                         >
                                             <div className="col-span-1 text-text-muted font-mono">{report.id}</div>
-                                            <div className="col-span-3 font-semibold truncate">{report.item_name}</div>
+                                            <div className="col-span-3 font-semibold truncate text-white">{report.item_name}</div>
                                             <div className="col-span-2">
                                                 <span className={`badge ${report.type === 'lost' ? 'badge-lost' : 'badge-found'}`}>
                                                     {report.type}
@@ -502,8 +534,287 @@ const AdminDashboard = () => {
                 {adminTab === 'export' && (
                     <div className="space-y-6">
                         <div className="bg-card border border-border rounded-xl p-6">
-                            <h2 className="text-lg font-bold uppercase tracking-wider mb-4">Export Reports</h2>
-                            <p className="text-text-muted mb-4">Export reports data to CSV for analysis.</p>
+                            <h2 className="text-lg font-bold uppercase tracking-wider mb-4 text-white">Export Reports</h2>
+                            <p className="text-text-muted mb-6">Download reports as CSV for external analysis or record-keeping.</p>
+
+                            {/* Period Selector */}
+                            <div className="mb-6">
+                                <label className="block text-xs font-bold uppercase tracking-widest text-text-muted mb-2">Period</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {[
+                                        { value: 'all', label: 'All Time' },
+                                        { value: 'weekly', label: 'Last 7 Days' },
+                                        { value: 'monthly', label: 'Last 30 Days' },
+                                        { value: 'semestral', label: 'Last 6 Months' },
+                                        { value: 'custom', label: 'Custom Range' },
+                                    ].map(opt => (
+                                        <button
+                                            key={opt.value}
+                                            onClick={() => setExportPeriod(opt.value)}
+                                            className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${
+                                                exportPeriod === opt.value
+                                                    ? 'bg-accent text-black'
+                                                    : 'bg-card-alt text-text-muted border border-border hover:text-white'
+                                            }`}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Custom Date Range */}
+                            {exportPeriod === 'custom' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase tracking-widest text-text-muted mb-2">From</label>
+                                        <input
+                                            type="date"
+                                            value={exportDateFrom}
+                                            onChange={e => setExportDateFrom(e.target.value)}
+                                            className="w-full bg-card-alt border border-border rounded-lg py-2.5 px-4 text-sm text-white focus:border-accent focus:outline-none transition-colors"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase tracking-widest text-text-muted mb-2">To</label>
+                                        <input
+                                            type="date"
+                                            value={exportDateTo}
+                                            onChange={e => setExportDateTo(e.target.value)}
+                                            className="w-full bg-card-alt border border-border rounded-lg py-2.5 px-4 text-sm text-white focus:border-accent focus:outline-none transition-colors"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Download Button */}
+                            <button
+                                onClick={async () => {
+                                    setExportLoading(true);
+                                    try {
+                                        const params = new URLSearchParams();
+                                        if (exportPeriod && exportPeriod !== 'all') params.append('period', exportPeriod);
+                                        if (exportPeriod === 'custom') {
+                                            if (exportDateFrom) params.append('date_from', exportDateFrom);
+                                            if (exportDateTo) params.append('date_to', exportDateTo);
+                                        }
+                                        const token = localStorage.getItem('claimio_token');
+                                        const response = await fetch(
+                                            `http://localhost:8000/api/admin/reports/export?${params.toString()}`,
+                                            { headers: { Authorization: `Bearer ${token}` } }
+                                        );
+                                        if (!response.ok) throw new Error('Export failed');
+                                        const blob = await response.blob();
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `claimio_reports_${exportPeriod}_${new Date().toISOString().slice(0, 10)}.csv`;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        a.remove();
+                                        window.URL.revokeObjectURL(url);
+                                        showMessage('CSV exported successfully!');
+                                    } catch (err) {
+                                        console.error('Export error:', err);
+                                        showMessage('Failed to export CSV. Please try again.');
+                                    } finally {
+                                        setExportLoading(false);
+                                    }
+                                }}
+                                disabled={exportLoading || (exportPeriod === 'custom' && !exportDateFrom && !exportDateTo)}
+                                className="btn-amber flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {exportLoading ? (
+                                    <Loader2 className="animate-spin" size={16} />
+                                ) : (
+                                    <Download size={16} />
+                                )}
+                                {exportLoading ? 'Exporting...' : 'Download CSV'}
+                            </button>
+
+                            {/* Preview Section */}
+                            <div className="mt-8 border-t border-border pt-6">
+                                <h3 className="text-sm font-bold uppercase tracking-widest text-white mb-4">
+                                    Preview ({exportPreviewMeta?.total || 0} Reports)
+                                </h3>
+                                
+                                {exportLoading && exportPreview.length === 0 ? (
+                                    <div className="flex justify-center py-8">
+                                        <Loader2 className="animate-spin text-text-muted" size={24} />
+                                    </div>
+                                ) : exportPreview.length === 0 ? (
+                                    <div className="text-center py-8 text-text-muted bg-card-alt rounded-xl border border-border">
+                                        <p className="text-sm">No reports match the selected period.</p>
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto border border-border rounded-xl">
+                                        <table className="w-full text-left text-sm whitespace-nowrap">
+                                            <thead className="bg-card-alt text-xs uppercase tracking-wider text-text-muted border-b border-border">
+                                                <tr>
+                                                    <th className="px-4 py-3 font-semibold">ID</th>
+                                                    <th className="px-4 py-3 font-semibold">Item</th>
+                                                    <th className="px-4 py-3 font-semibold">Type</th>
+                                                    <th className="px-4 py-3 font-semibold">Status</th>
+                                                    <th className="px-4 py-3 font-semibold">Date</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-border/50">
+                                                {exportPreview.map(report => (
+                                                    <tr key={report.id} className="hover:bg-accent/5 transition-colors">
+                                                        <td className="px-4 py-3 text-text-muted font-mono">{report.id}</td>
+                                                        <td className="px-4 py-3 text-white font-medium">{report.item_name}</td>
+                                                        <td className="px-4 py-3">
+                                                            <span className={`badge ${report.type === 'lost' ? 'badge-lost' : 'badge-found'}`}>
+                                                                {report.type}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <span className={`badge ${STATUS_COLORS[report.status] || ''}`}>
+                                                                {report.status}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-text-muted text-xs">
+                                                            {new Date(report.created_at).toLocaleDateString()}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                        {exportPreviewMeta?.total > exportPreview.length && (
+                                            <div className="px-4 py-3 bg-card-alt text-xs text-text-muted text-center border-t border-border">
+                                                Showing {exportPreview.length} of {exportPreviewMeta.total} reports. Download CSV to see all.
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {/* ════════ REPORT DETAIL MODAL ════════ */}
+                {selectedReport && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <div className="bg-card border border-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+                            {/* Modal Header */}
+                            <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between z-10">
+                                <div className="flex items-center gap-3">
+                                    <h2 className="text-xl font-bold text-white uppercase tracking-wide">Report #{selectedReport.id}</h2>
+                                    <span className={`badge ${selectedReport.type === 'lost' ? 'badge-lost' : 'badge-found'}`}>
+                                        {selectedReport.type}
+                                    </span>
+                                    <span className={`badge ${STATUS_COLORS[selectedReport.status] || ''}`}>
+                                        {selectedReport.status}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedReport(null)}
+                                    className="p-2 text-text-muted hover:text-white bg-card-alt rounded-lg transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Modal Body */}
+                            <div className="p-6 space-y-8 text-sm">
+                                {/* Basic Info */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-1">Item Name</p>
+                                            <p className="text-white text-lg font-bold">{selectedReport.item_name}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-1">Description</p>
+                                            <p className="text-gray-300 leading-relaxed">{selectedReport.description}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4 bg-card-alt p-5 rounded-xl border border-border">
+                                        <div>
+                                            <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-1">Location</p>
+                                            <p className="text-white flex items-center gap-2"><MapPin size={14} className="text-accent" /> {selectedReport.location}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-1">Reported By</p>
+                                            <div className="text-white">
+                                                <p className="font-semibold">{selectedReport.user?.name}</p>
+                                                <p className="text-text-muted text-xs">{selectedReport.user?.email}</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-1">Date</p>
+                                            <p className="text-white flex items-center gap-2"><Calendar size={14} className="text-accent" /> {new Date(selectedReport.created_at).toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Actions - Change Status */}
+                                <div className="border-t border-border pt-6">
+                                    <h3 className="text-sm font-bold uppercase tracking-widest text-white mb-4">Manage Status</h3>
+                                    <div className="flex flex-wrap gap-2">
+                                        {['pending', 'matched', 'claimed', 'returned'].map(status => (
+                                            <button
+                                                key={status}
+                                                onClick={() => handleStatusChange(selectedReport.id, status)}
+                                                disabled={selectedReport.status === status}
+                                                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors border ${
+                                                    selectedReport.status === status 
+                                                    ? 'bg-accent/20 border-accent/50 text-accent cursor-default'
+                                                    : 'bg-card-alt border-border text-text-muted hover:text-white hover:border-gray-500'
+                                                }`}
+                                            >
+                                                {status}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Claims Section */}
+                                <div className="border-t border-border pt-6">
+                                    <h3 className="text-sm font-bold uppercase tracking-widest text-white mb-4">
+                                        Claims ({selectedReport.claims?.length || 0})
+                                    </h3>
+                                    {!selectedReport.claims || selectedReport.claims.length === 0 ? (
+                                        <p className="text-text-muted text-sm italic bg-card-alt p-4 rounded-xl border border-border text-center">No claims submitted for this report yet.</p>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {selectedReport.claims.map(claim => (
+                                                <div key={claim.id} className="bg-card-alt border border-border rounded-xl p-5">
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div>
+                                                            <p className="text-white font-bold">{claim.user?.name}</p>
+                                                            <p className="text-text-muted text-xs">{claim.user?.email}</p>
+                                                        </div>
+                                                        <span className={`text-xs font-bold uppercase px-3 py-1 rounded-full ${CLAIM_COLORS[claim.claim_status] || 'bg-gray-500/20 text-gray-400'}`}>
+                                                            {claim.claim_status}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mb-4">
+                                                        <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-1">Proof Description</p>
+                                                        <p className="text-gray-300 italic">"{claim.proof_description}"</p>
+                                                    </div>
+                                                    
+                                                    {claim.claim_status === 'pending' && (
+                                                        <div className="flex gap-2 justify-end mt-4 pt-4 border-t border-border/50">
+                                                            <button
+                                                                onClick={() => handleClaimAction(claim.id, 'rejected')}
+                                                                className="px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleClaimAction(claim.id, 'approved')}
+                                                                className="px-4 py-2 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
