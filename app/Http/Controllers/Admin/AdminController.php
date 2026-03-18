@@ -141,7 +141,7 @@ class AdminController extends Controller
             // Validate status transitions
             if (!$this->isValidStatusTransition($oldStatus, $newStatus)) {
                 return response()->json([
-                    'error' => 'Invalid status transition from ' . $oldStatus . ' to ' . $newStatus
+                    'message' => 'Invalid status transition from ' . $oldStatus . ' to ' . $newStatus
                 ], 422);
             }
 
@@ -186,7 +186,7 @@ class AdminController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Admin update report status error: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to update report status'], 500);
+            return response()->json(['message' => 'Failed to update report status'], 500);
         }
     }
 
@@ -197,6 +197,25 @@ class AdminController extends Controller
     {
         try {
             $query = Report::with(['user', 'claims']);
+
+            // Period-based filtering
+            if ($request->has('period') && $request->period) {
+                $now = Carbon::now();
+                switch ($request->period) {
+                    case 'weekly':
+                        $query->where('created_at', '>=', $now->subDays(7));
+                        break;
+                    case 'monthly':
+                        $query->where('created_at', '>=', $now->subDays(30));
+                        break;
+                    case 'semestral':
+                        $query->where('created_at', '>=', $now->subMonths(6));
+                        break;
+                    case 'custom':
+                        // Falls through to date_from/date_to below
+                        break;
+                }
+            }
 
             // Apply same filters as reports() method
             if ($request->has('status') && $request->status) {

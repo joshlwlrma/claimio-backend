@@ -1,68 +1,79 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Calendar, CheckCircle2, ChevronRight, Search } from 'lucide-react';
+import { MapPin, Calendar, ChevronRight, Search, Clock } from 'lucide-react';
 
 const ReportCard = ({ report }) => {
 
-    // Choose badge color based on type
     const isLost = report.type === 'lost';
-    const typeBadgeClass = isLost ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
 
-    // Format date safely
-    const formattedDate = report.created_at ? new Date(report.created_at).toLocaleDateString() : 'Unknown date';
+    const formattedDate = report.created_at
+        ? new Date(report.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+        : 'Unknown date';
+
+    const formattedTime = report.created_at
+        ? new Date(report.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+        : '';
 
     return (
-        <div className="bg-landing-surface border border-landing-border rounded-xl overflow-hidden hover:border-landing-gray/50 transition-colors flex flex-col h-full shadow-lg group">
+        <div className="bg-white rounded-xl overflow-hidden hover:shadow-xl transition-shadow flex flex-col h-full group border border-gray-100">
 
-            {/* Image / Thumbnail Placeholder */}
-            <div className="h-48 w-full bg-black relative flex items-center justify-center overflow-hidden border-b border-landing-border">
+            {/* Image / Thumbnail */}
+            <div className="h-48 w-full bg-card relative flex items-center justify-center overflow-hidden">
                 {report.images && report.images.length > 0 ? (
                     <img
                         src={report.images[0].url}
                         alt={report.item_name}
-                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300"
                         onError={(e) => { e.target.src = ''; e.target.className = 'hidden'; }}
                     />
                 ) : (
-                    <Search className="text-landing-border w-12 h-12" />
+                    <Search className="text-text-muted/30 w-12 h-12" />
                 )}
 
-                {/* Status Badge overlays image */}
-                <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${typeBadgeClass}`}>
+                {/* Type Badge top-right */}
+                <div className={`absolute top-3 right-3 badge ${isLost ? 'badge-lost' : 'badge-found'}`}>
                     {report.type}
                 </div>
             </div>
 
-            <div className="p-5 flex flex-col flex-grow">
-                <h3 className="font-bold text-lg text-white mb-2 line-clamp-1 truncate">{report.item_name}</h3>
+            {/* Dark bottom section */}
+            <div className="bg-card p-5 flex flex-col flex-grow">
+                <h3 className="font-bold text-base text-white mb-2 line-clamp-1">
+                    {report.item_name}
+                </h3>
 
-                <p className="text-landing-gray text-sm line-clamp-2 mb-4 flex-grow">
-                    {report.description}
+                <p className="text-text-muted text-xs line-clamp-2 mb-4 flex-grow">
+                    {report.description || 'No description available'}
                 </p>
 
-                <div className="space-y-2 mt-auto">
-                    <div className="flex items-center text-landing-gray text-xs">
-                        <MapPin size={14} className="mr-2" />
-                        <span className="truncate">{report.location}</span>
-                    </div>
-                    <div className="flex items-center text-landing-gray text-xs">
-                        <Calendar size={14} className="mr-2" />
+                <div className="space-y-1.5">
+                    {report.location && (
+                        <div className="flex items-center text-text-muted text-xs">
+                            <MapPin size={12} className="mr-2 shrink-0" />
+                            <span className="truncate">{report.location}</span>
+                        </div>
+                    )}
+                    <div className="flex items-center text-text-muted text-xs">
+                        <Calendar size={12} className="mr-2 shrink-0" />
                         <span>{formattedDate}</span>
                     </div>
-                    <div className="flex items-center text-landing-gray text-xs">
-                        <CheckCircle2 size={14} className="mr-2" />
-                        <span className="capitalize text-landing-gray font-medium">Status: {report.status}</span>
-                    </div>
+                    {formattedTime && (
+                        <div className="flex items-center text-text-muted text-xs">
+                            <Clock size={12} className="mr-2 shrink-0" />
+                            <span>{formattedTime}</span>
+                        </div>
+                    )}
                 </div>
-
             </div>
 
-            <div className="px-5 py-4 border-t border-landing-border bg-black/50">
-                <Link to={`/reports/${report.id}`} className="flex items-center justify-between text-landing-gray group-hover:text-white transition-colors text-sm font-semibold uppercase tracking-wider">
-                    <span>View Details</span>
-                    <ChevronRight size={16} className="transform group-hover:translate-x-1 transition-transform" />
-                </Link>
-            </div>
+            {/* Amber bottom bar */}
+            <Link
+                to={`/reports/${report.id}`}
+                className="bg-accent px-5 py-3 flex items-center justify-between text-black text-xs font-bold uppercase tracking-wider hover:bg-accent-dark transition-colors"
+            >
+                <span>View Details</span>
+                <ChevronRight size={16} className="transform group-hover:translate-x-1 transition-transform" />
+            </Link>
 
         </div>
     );

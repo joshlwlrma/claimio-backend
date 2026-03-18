@@ -12,9 +12,11 @@ import Dashboard from './pages/Dashboard';
 import ReportForm from './pages/ReportForm';
 import ReportDetail from './pages/ReportDetail';
 import Profile from './pages/Profile';
-import AdminDashboard from './pages/AdminDashboard';
+import AdminDashboard from './pages/AdminDashboard'; // Re-enabled
 
 function App() {
+  console.log('App.jsx: App component rendering...');
+  
   return (
     <Router>
       <AuthProvider>

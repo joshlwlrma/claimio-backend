@@ -108,9 +108,11 @@ class ClaimController extends Controller
      * - The claim_status is set to "approved"
      * - The parent report status is updated to "claimed"
      * - All other pending claims on the same report are auto-rejected
+     * - SMS notifications are sent to report owner and claimant
      *
      * When a claim is rejected:
      * - Only that specific claim_status is set to "rejected"
+     * - SMS notification sent to claimant
      */
     public function updateStatus(Request $request, Claim $claim): JsonResponse
     {
@@ -150,6 +152,37 @@ class ClaimController extends Controller
                 "Admin {$newStatus} claim #{$claim->id} on report #{$claim->report_id}"
             );
         });
+
+        // Send SMS notifications (fire-and-forget, non-blocking)
+        try {
+            $smsService = new \App\Services\SmsService();
+            $report = $claim->report;
+            $claimant = $claim->user;
+            $reportOwner = $report->user;
+
+            // Notify the claimant
+            if ($claimant) {
+                $claimantMsg = $newStatus === 'approved'
+                    ? "Claimio: Your claim on \"{$report->item_name}\" has been APPROVED! Please visit the office to collect your item."
+                    : "Claimio: Your claim on \"{$report->item_name}\" has been rejected. If you believe this is an error, please contact the admin.";
+
+                if ($claimant->phone_number) {
+                    $smsService->send($claimant->phone_number, $claimantMsg, $claimant->email);
+                }
+            }
+
+            // Notify the report owner (only on approval)
+            if ($newStatus === 'approved' && $reportOwner) {
+                $ownerMsg = "Claimio: A claim on your report \"{$report->item_name}\" has been approved. The item has been marked as claimed.";
+
+                if ($reportOwner->phone_number) {
+                    $smsService->send($reportOwner->phone_number, $ownerMsg, $reportOwner->email);
+                }
+            }
+        } catch (\Exception $e) {
+            // SMS failure should never block the claim action
+            \Illuminate\Support\Facades\Log::error('SMS notification error: ' . $e->getMessage());
+        }
 
         $claim->load(['user:id,name,email', 'report']);
 

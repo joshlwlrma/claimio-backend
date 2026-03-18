@@ -168,6 +168,15 @@ class ReportController extends Controller
 
         $report->load(['images', 'user:id,name,email']);
 
+        // Trigger automatic matching after report creation
+        try {
+            $matchingService = new \App\Services\MatchingService();
+            $matchingService->findMatches($report);
+        } catch (\Exception $e) {
+            // Matching failure should not prevent report creation
+            \Illuminate\Support\Facades\Log::error('Matching failed after report creation: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Report submitted successfully.',

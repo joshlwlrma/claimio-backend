@@ -3,29 +3,30 @@ import { Link } from 'react-router-dom';
 
 const Navbar = () => {
     return (
-        <div className="absolute top-0 w-full z-50 pt-6">
-            <nav className="container relative">
-                <div className="bg-landing-surface border border-landing-border rounded-full mx-auto max-w-4xl h-14 flex items-center justify-between px-6 shadow-2xl">
-                    {/* Logo */}
-                    <Link to="/" className="font-extrabold text-white tracking-widest text-lg ml-2">
-                        LOGO
-                    </Link>
+        <nav className="fixed top-0 w-full z-50 bg-dark">
+            <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+                {/* Logo */}
+                <Link to="/" className="font-bold text-white tracking-widest text-xl uppercase">
+                    CLAIMIO
+                </Link>
 
-                    {/* Links */}
-                    <div className="hidden md:flex items-center gap-8 text-[11px] font-bold text-white uppercase tracking-widest">
-                        <Link to="/" className="hover:text-landing-gray transition-colors">Home</Link>
-                        <a href="#about" className="hover:text-landing-gray transition-colors">About Us</a>
-                        <a href="#facts" className="hover:text-landing-gray transition-colors">Facts</a>
-                        <a href="#contact" className="hover:text-landing-gray transition-colors">Contact Us</a>
-                    </div>
-
-                    {/* Login Button */}
-                    <Link to="/login" className="bg-white text-black px-8 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-landing-gray transition-colors">
-                        Log In
-                    </Link>
+                {/* Center Links */}
+                <div className="hidden md:flex items-center gap-8 text-[12px] font-bold text-white uppercase tracking-widest">
+                    <a href="#hero" className="hover:text-accent transition-colors">Home</a>
+                    <a href="#facts" className="hover:text-accent transition-colors">Facts</a>
+                    <a href="#about" className="hover:text-accent transition-colors">About Us</a>
+                    <a href="#contact" className="hover:text-accent transition-colors">Contact Us</a>
                 </div>
-            </nav>
-        </div>
+
+                {/* Login Button */}
+                <Link
+                    to="/login"
+                    className="btn-amber text-xs px-8 py-2"
+                >
+                    Log In
+                </Link>
+            </div>
+        </nav>
     );
 };
 

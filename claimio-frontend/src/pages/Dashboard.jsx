@@ -21,77 +21,95 @@ const Dashboard = () => {
     const [reports, setReports] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    const [meta, setMeta] = useState(null); // Pagination metadata
+    const [meta, setMeta] = useState(null);
 
     const [activeTab, setActiveTab] = useState(initialTab);
     const [searchQuery, setSearchQuery] = useState(initialSearch);
     const [currentPage, setCurrentPage] = useState(initialPage);
 
-    // Debounce search query so we don't spam the API on every keystroke
     const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
+
+    // Stats
+    const [statsData, setStatsData] = useState({ total: 0, found: 0, lost: 0 });
 
     useEffect(() => {
         const timer = setTimeout(() => {
             if (searchQuery !== debouncedSearch) {
                 setDebouncedSearch(searchQuery);
-                setCurrentPage(1); // Reset to page 1 on new search
+                setCurrentPage(1);
             }
         }, 500);
         return () => clearTimeout(timer);
     }, [searchQuery, debouncedSearch]);
 
-    // Update URL when state changes
     useEffect(() => {
         const params = new URLSearchParams();
         if (activeTab !== 'all') params.set('type', activeTab);
         if (debouncedSearch) params.set('q', debouncedSearch);
         if (currentPage > 1) params.set('page', currentPage);
-        
+
         const newSearch = params.toString();
-        // Only navigate if the URL actually needs to change, preventing unnecessary history entries
         if (location.search !== `?${newSearch}` && (location.search !== '' || newSearch !== '')) {
-             navigate({ search: newSearch }, { replace: true });
+            navigate({ search: newSearch }, { replace: true });
         }
     }, [activeTab, debouncedSearch, currentPage, navigate, location.search]);
 
-    // Fetch reports when dependencies change (tab, search, or page)
     const fetchReports = useCallback(async () => {
         try {
             setIsLoading(true);
             setError('');
-            
+
             const params = { page: currentPage };
             if (activeTab !== 'all') params.type = activeTab;
             if (debouncedSearch) params.q = debouncedSearch;
 
             const response = await api.get('/reports', { params });
-            
+
             setReports(response.data.data);
             setMeta(response.data.meta);
+
+            // Calculate stats from meta if available
+            if (response.data.meta) {
+                setStatsData(prev => ({ ...prev, total: response.data.meta.total }));
+            }
         } catch (err) {
             console.error('Error fetching reports:', err);
             setError('Failed to load reports from the server. Please try again later.');
-            
-            // Fallback demo data ONLY if API completely fails, not for zero results
             if (!err.response) {
-                setReports([
-                    { id: 1, type: 'lost', item_name: 'MacBook Pro', description: 'Silver 14" M1 Pro, last seen in Library 3rd floor.', location: 'Library, Building A', status: 'open', created_at: '2023-11-20T10:00:00Z', images: [] },
-                    { id: 2, type: 'found', item_name: 'Blue Hydroflask', description: 'With lots of stickers, found near the cafeteria entrance.', location: 'Cafeteria', status: 'open', created_at: '2023-11-21T14:30:00Z', images: [] },
-                ]);
+                setReports([]);
             }
         } finally {
             setIsLoading(false);
         }
     }, [currentPage, activeTab, debouncedSearch]);
 
+    // Fetch found/lost counts separately for stats
+    useEffect(() => {
+        const fetchCounts = async () => {
+            try {
+                const [foundRes, lostRes] = await Promise.all([
+                    api.get('/reports', { params: { type: 'found', page: 1 } }),
+                    api.get('/reports', { params: { type: 'lost', page: 1 } }),
+                ]);
+                setStatsData(prev => ({
+                    ...prev,
+                    found: foundRes.data.meta?.total || 0,
+                    lost: lostRes.data.meta?.total || 0,
+                }));
+            } catch (err) {
+                console.error('Error fetching counts:', err);
+            }
+        };
+        fetchCounts();
+    }, []);
+
     useEffect(() => {
         fetchReports();
     }, [fetchReports]);
 
-    // Handlers
     const handleTabChange = (tab) => {
         setActiveTab(tab);
-        setCurrentPage(1); // Reset to page 1 when changing tabs
+        setCurrentPage(1);
     };
 
     const handleNextPage = () => {
@@ -114,56 +132,68 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-landing-dark font-sans text-white pb-20">
+        <div className="min-h-screen bg-page font-sans pb-20">
             <UserBar />
 
             <main className="container mx-auto px-4 py-8">
 
                 {/* Welcome Area */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-extrabold tracking-wide mb-2 uppercase text-white">Dashboard</h1>
-                    <p className="text-landing-gray">
-                        Welcome back, <span className="font-semibold text-white">{user?.name || 'User'}</span>! Here are the latest items reported on campus.
+                    <h1 className="text-3xl font-bold tracking-wide uppercase text-text-dark mb-2">
+                        Dashboard
+                    </h1>
+                    <p className="text-text-muted">
+                        Welcome back, <span className="font-semibold text-text-dark">{user?.name || 'User'}</span>!
                     </p>
                 </div>
 
-                {/* Dashboard Stats */}
+                {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                    <div className="bg-landing-surface border border-landing-border rounded-xl p-6 shadow-2xl">
-                        <h3 className="text-landing-gray text-xs uppercase tracking-widest font-bold mb-2">Total Active Reports</h3>
-                        <p className="text-3xl font-bold text-white">{meta?.total || reports.length}</p>
+                    <div className="bg-card rounded-xl p-6 border border-border">
+                        <h3 className="text-text-muted text-xs uppercase tracking-widest font-bold mb-2">Total Active Reports</h3>
+                        <p className="text-3xl font-bold text-white">{meta?.total || statsData.total}</p>
                     </div>
-                    {/* The specific count by type relies on API now, we don't have the full list. Hide stats if backend doesn't provide them, or keep placeholder logic for now */}
-                    <div className="bg-landing-surface border border-landing-border rounded-xl p-6 shadow-2xl">
-                        <h3 className="text-landing-gray text-xs uppercase tracking-widest font-bold mb-2">My Reports</h3>
-                        <p className="text-3xl font-bold text-white">View Profile →</p>
+                    <div className="bg-card rounded-xl p-6 border border-border">
+                        <h3 className="text-text-muted text-xs uppercase tracking-widest font-bold mb-2">Items Found</h3>
+                        <p className="text-3xl font-bold text-emerald-400">{statsData.found}</p>
                     </div>
-                    <div className="bg-landing-surface border border-landing-border rounded-xl p-6 shadow-2xl">
-                        <h3 className="text-landing-gray text-xs uppercase tracking-widest font-bold mb-2">My Claims</h3>
-                        <p className="text-3xl font-bold text-white">View Profile →</p>
+                    <div className="bg-card rounded-xl p-6 border border-border">
+                        <h3 className="text-text-muted text-xs uppercase tracking-widest font-bold mb-2">Items Lost</h3>
+                        <p className="text-3xl font-bold text-red-400">{statsData.lost}</p>
                     </div>
                 </div>
 
-                {/* Controls: Search and Filter Tabs */}
-                <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 bg-landing-surface p-4 rounded-xl border border-landing-border shadow-md">
-
+                {/* Filter Tabs + Search */}
+                <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                     {/* Tabs */}
-                    <div className="flex bg-black p-1 rounded-lg w-full md:w-auto border border-landing-border">
+                    <div className="flex gap-2">
                         <button
                             onClick={() => handleTabChange('all')}
-                            className={`flex-1 md:flex-none px-6 py-2.5 rounded-md text-sm font-bold uppercase tracking-wider transition-colors ${activeTab === 'all' ? 'bg-white text-black shadow' : 'text-landing-gray hover:text-white'}`}
+                            className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${
+                                activeTab === 'all'
+                                    ? 'bg-accent text-black'
+                                    : 'text-text-muted hover:text-text-dark'
+                            }`}
                         >
                             All Items
                         </button>
                         <button
                             onClick={() => handleTabChange('found')}
-                            className={`flex-1 md:flex-none px-6 py-2.5 rounded-md text-sm font-bold uppercase tracking-wider transition-colors ${activeTab === 'found' ? 'bg-emerald-500 text-white shadow' : 'text-landing-gray hover:text-white'}`}
+                            className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${
+                                activeTab === 'found'
+                                    ? 'bg-accent text-black'
+                                    : 'text-text-muted hover:text-text-dark'
+                            }`}
                         >
                             Found
                         </button>
                         <button
                             onClick={() => handleTabChange('lost')}
-                            className={`flex-1 md:flex-none px-6 py-2.5 rounded-md text-sm font-bold uppercase tracking-wider transition-colors ${activeTab === 'lost' ? 'bg-red-500 text-white shadow' : 'text-landing-gray hover:text-white'}`}
+                            className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${
+                                activeTab === 'lost'
+                                    ? 'bg-accent text-black'
+                                    : 'text-text-muted hover:text-text-dark'
+                            }`}
                         >
                             Lost
                         </button>
@@ -171,46 +201,46 @@ const Dashboard = () => {
 
                     {/* Search bar */}
                     <div className="relative w-full md:w-80">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search size={18} className="text-landing-gray" />
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Search size={16} className="text-text-muted" />
                         </div>
                         <input
                             type="text"
                             placeholder="Search item names..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 bg-black border border-landing-border rounded-lg text-sm text-white focus:border-white focus:outline-none transition-colors"
+                            className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-full text-sm text-text-dark focus:border-accent focus:outline-none transition-colors"
                         />
                     </div>
                 </div>
 
                 {/* Reports Grid */}
                 {isLoading ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-landing-gray">
+                    <div className="flex flex-col items-center justify-center py-20 text-text-muted">
                         <Loader2 className="animate-spin mb-4" size={40} />
                         <p className="font-semibold uppercase tracking-wider">Loading reports...</p>
                     </div>
                 ) : error ? (
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl p-6 flex flex-col items-center justify-center py-12">
+                    <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-6 flex flex-col items-center justify-center py-12">
                         <AlertCircle size={40} className="mb-4" />
                         <p className="font-medium text-center">{error}</p>
-                        <button onClick={fetchReports} className="mt-4 px-6 py-2 bg-red-500 text-white rounded-full text-sm font-semibold uppercase tracking-wider hover:bg-red-600 transition-colors">
+                        <button onClick={fetchReports} className="mt-4 btn-amber">
                             Try Again
                         </button>
                     </div>
                 ) : reports.length === 0 ? (
-                    <div className="bg-landing-surface border border-landing-border rounded-xl p-12 text-center shadow-lg">
-                        <div className="bg-black w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 border border-landing-border">
-                            <Filter size={32} className="text-landing-gray" />
+                    <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+                        <div className="bg-page w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Filter size={32} className="text-text-muted" />
                         </div>
-                        <h3 className="text-xl font-bold text-white mb-2 uppercase tracking-wide">No items found</h3>
-                        <p className="text-landing-gray max-w-sm mx-auto">
+                        <h3 className="text-xl font-bold text-text-dark mb-2 uppercase tracking-wide">No items found</h3>
+                        <p className="text-text-muted max-w-sm mx-auto">
                             We couldn't find any reports matching your current filters or search query.
                         </p>
                         {(activeTab !== 'all' || searchQuery !== '') && (
                             <button
                                 onClick={clearFilters}
-                                className="mt-6 text-sm font-bold text-white uppercase tracking-wider hover:underline"
+                                className="mt-6 btn-amber"
                             >
                                 Clear all filters
                             </button>
@@ -223,33 +253,33 @@ const Dashboard = () => {
                                 <ReportCard key={report.id} report={report} />
                             ))}
                         </div>
-                        
-                        {/* Pagination Controls */}
+
+                        {/* Pagination */}
                         {meta && meta.last_page > 1 && (
                             <div className="mt-12 flex items-center justify-center gap-4">
                                 <button
                                     onClick={handlePrevPage}
                                     disabled={currentPage === 1}
                                     className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                                        currentPage === 1 
-                                            ? 'bg-landing-surface border border-landing-border text-landing-gray opacity-50 cursor-not-allowed' 
-                                            : 'bg-landing-surface border border-landing-border text-white hover:bg-white hover:text-black cursor-pointer'
+                                        currentPage === 1
+                                            ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                            : 'bg-card text-white hover:bg-accent hover:text-black cursor-pointer'
                                     }`}
                                 >
                                     <ChevronLeft size={20} />
                                 </button>
-                                
-                                <span className="text-sm font-bold text-landing-gray uppercase tracking-wider">
-                                    Page <span className="text-white mx-1">{meta.current_page}</span> of <span className="text-white ml-1">{meta.last_page}</span>
+
+                                <span className="text-sm font-bold text-text-muted uppercase tracking-wider">
+                                    Page <span className="text-text-dark mx-1">{meta.current_page}</span> of <span className="text-text-dark ml-1">{meta.last_page}</span>
                                 </span>
 
                                 <button
                                     onClick={handleNextPage}
                                     disabled={currentPage === meta.last_page}
                                     className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                                        currentPage === meta.last_page 
-                                            ? 'bg-landing-surface border border-landing-border text-landing-gray opacity-50 cursor-not-allowed' 
-                                            : 'bg-landing-surface border border-landing-border text-white hover:bg-white hover:text-black cursor-pointer'
+                                        currentPage === meta.last_page
+                                            ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                            : 'bg-card text-white hover:bg-accent hover:text-black cursor-pointer'
                                     }`}
                                 >
                                     <ChevronRight size={20} />

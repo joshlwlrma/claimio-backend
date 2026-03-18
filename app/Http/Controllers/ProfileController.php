@@ -56,4 +56,25 @@ class ProfileController extends Controller
             'data' => $claims,
         ]);
     }
+
+    /**
+     * Update user profile (phone number only).
+     * Phone is stored privately for SMS notifications.
+     */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $request->validate([
+            'phone_number' => 'nullable|string|max:20',
+        ]);
+
+        $user = $request->user();
+        $user->phone_number = $request->input('phone_number');
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile updated successfully.',
+            'data' => $user,
+        ]);
+    }
 }

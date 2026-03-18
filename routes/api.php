@@ -7,6 +7,8 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ClaimController;
 use App\Http\Controllers\Admin\AdminController;
 
+use App\Http\Controllers\Admin\MatchController;
+
 // ───────────────────────────────────────────────
 // Public Routes (no authentication required)
 // ───────────────────────────────────────────────
@@ -38,6 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // User's own profile routes
     Route::get('/user/reports', [\App\Http\Controllers\ProfileController::class, 'reports'])->name('user.reports');
     Route::get('/user/claims', [\App\Http\Controllers\ProfileController::class, 'claims'])->name('user.claims');
+    Route::put('/user/profile', [\App\Http\Controllers\ProfileController::class, 'updateProfile'])->name('user.profile.update');
 
     // Reports — create, update, delete
     Route::post('/reports', [ReportController::class , 'store'])->name('reports.store');
@@ -68,4 +71,9 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     // Approve or reject a claim
     Route::put('/claims/{claim}/status', [ClaimController::class , 'updateStatus'])
         ->name('admin.claims.update-status');
+
+    // Potential matches
+    Route::get('/matches', [MatchController::class, 'index'])->name('admin.matches.index');
+    Route::put('/matches/{match}/confirm', [MatchController::class, 'confirm'])->name('admin.matches.confirm');
+    Route::put('/matches/{match}/dismiss', [MatchController::class, 'dismiss'])->name('admin.matches.dismiss');
 });
