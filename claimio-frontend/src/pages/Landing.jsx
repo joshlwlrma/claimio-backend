@@ -8,7 +8,7 @@ import ashhImg from '../assets/ashh.webp';
 import ivannImg from '../assets/ivann.webp';
 import joshhImg from '../assets/joshh.webp';
 import kattImg from '../assets/katt.webp';
-import landingBg from '../assets/landing page bg.webp';
+import landingBg from '../assets/landing_page.webp';
 
 const faqData = [
     {
@@ -30,11 +30,11 @@ const faqData = [
 ];
 
 const teamMembers = [
-    { name: 'Alexx', role: 'Frontend Developer', image: alexxImg },
-    { name: 'Ashh', role: 'Backend Developer', image: ashhImg },
-    { name: 'Ivann', role: 'UI/UX Designer', image: ivannImg },
-    { name: 'Joshh', role: 'Project Manager', image: joshhImg },
-    { name: 'Katt', role: 'QA Tester', image: kattImg },
+    { name: 'Ashley Avanica', role: 'Developer', image: ashhImg },
+    { name: 'Josh Michael Fangonilo', role: 'Developer', image: joshhImg },
+    { name: 'Alexandra Pauline Martinez', role: 'Developer', image: alexxImg },
+    { name: 'John Ivan Roxas', role: 'Developer', image: ivannImg },
+    { name: 'Katherine Supan', role: 'Developer', image: kattImg },
 ];
 
 const Landing = () => {
@@ -182,7 +182,7 @@ const Landing = () => {
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-8 max-w-4xl mx-auto">
                         {teamMembers.map((member, index) => (
                             <div key={index} className="flex flex-col items-center">
-                                <div className="w-24 h-24 bg-card rounded-full overflow-hidden flex items-center justify-center mb-4 border border-border">
+                                <div className="w-59 h-59 bg-card rounded-full overflow-hidden flex items-center justify-center mb-4 border border-border">
                                     <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
                                 </div>
                                 <h3 className="font-bold text-text-dark text-sm uppercase tracking-wider mt-4">
