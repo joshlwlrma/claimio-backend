@@ -71,7 +71,7 @@ class MatchController extends Controller
 
                 ActivityLog::create([
                     'user_id' => auth()->id(),
-                    'action' => 'match_confirmed',
+                    'action_type' => 'match_confirmed',
                     'description' => "Confirmed match between Lost Report #{$match->lost_report_id} and Found Report #{$match->found_report_id} (Score: {$match->similarity_score}%)",
                 ]);
             });
@@ -96,7 +96,7 @@ class MatchController extends Controller
 
             ActivityLog::create([
                 'user_id' => auth()->id(),
-                'action' => 'match_dismissed',
+                'action_type' => 'match_dismissed',
                 'description' => "Dismissed match between Lost Report #{$match->lost_report_id} and Found Report #{$match->found_report_id}",
             ]);
 

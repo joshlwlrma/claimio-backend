@@ -22,7 +22,7 @@ const CLAIM_COLORS = {
 
 const AdminDashboard = () => {
     console.log('AdminDashboard component mounting...');
-    
+
     // ── State ───────────────────────────────────────
     const [stats, setStats] = useState(null);
     const [reports, setReports] = useState([]);
@@ -149,7 +149,7 @@ const AdminDashboard = () => {
     // Fetch export preview when filters change
     useEffect(() => {
         if (adminTab !== 'export') return;
-        
+
         const fetchPreview = async () => {
             try {
                 setExportLoading(true);
@@ -159,7 +159,7 @@ const AdminDashboard = () => {
                     if (exportDateFrom) params.date_from = exportDateFrom;
                     if (exportDateTo) params.date_to = exportDateTo;
                 }
-                
+
                 const { data } = await api.get('/admin/reports', { params });
                 setExportPreview(data.data);
                 setExportPreviewMeta(data.meta);
@@ -169,11 +169,11 @@ const AdminDashboard = () => {
                 setExportLoading(false);
             }
         };
-        
+
         const debounce = setTimeout(() => {
             fetchPreview();
         }, 300); // 300ms debounce
-        
+
         return () => clearTimeout(debounce);
     }, [adminTab, exportPeriod, exportDateFrom, exportDateTo]);
 
@@ -280,11 +280,10 @@ const AdminDashboard = () => {
                         <button
                             key={tab}
                             onClick={() => setAdminTab(tab)}
-                            className={`px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${
-                                adminTab === tab
+                            className={`px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${adminTab === tab
                                     ? 'bg-accent text-black'
                                     : 'bg-card text-text-muted hover:text-white border border-border'
-                            }`}
+                                }`}
                         >
                             {tab}
                         </button>
@@ -412,6 +411,33 @@ const AdminDashboard = () => {
                                 </div>
                             )}
                         </div>
+
+                        {/* Recent Activity Log */}
+                        {stats?.recent_activity?.length > 0 && (
+                            <div className="bg-card border border-border rounded-xl mt-6">
+                                <div className="px-4 py-3 border-b border-border">
+                                    <h3 className="text-sm font-bold uppercase tracking-widest text-white flex items-center gap-2">
+                                        <Clock size={14} className="text-accent" />
+                                        Recent Activity
+                                    </h3>
+                                </div>
+                                <div className="divide-y divide-border/40">
+                                    {stats.recent_activity.slice(0, 10).map((log, idx) => (
+                                        <div key={log.id ?? idx} className="flex items-start gap-3 px-4 py-3 hover:bg-accent/5 transition-colors">
+                                            <span className="mt-1.5 h-2 w-2 rounded-full bg-accent shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="text-sm text-gray-300 leading-snug">{log.description}</p>
+                                                <p className="text-xs text-text-muted mt-1">
+                                                    {typeof log.user === 'object' ? log.user?.name : log.user}
+                                                    {' · '}
+                                                    {new Date(log.created_at).toLocaleString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </>
                 )}
 
@@ -551,11 +577,10 @@ const AdminDashboard = () => {
                                         <button
                                             key={opt.value}
                                             onClick={() => setExportPeriod(opt.value)}
-                                            className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${
-                                                exportPeriod === opt.value
+                                            className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${exportPeriod === opt.value
                                                     ? 'bg-accent text-black'
                                                     : 'bg-card-alt text-text-muted border border-border hover:text-white'
-                                            }`}
+                                                }`}
                                         >
                                             {opt.label}
                                         </button>
@@ -637,7 +662,7 @@ const AdminDashboard = () => {
                                 <h3 className="text-sm font-bold uppercase tracking-widest text-white mb-4">
                                     Preview ({exportPreviewMeta?.total || 0} Reports)
                                 </h3>
-                                
+
                                 {exportLoading && exportPreview.length === 0 ? (
                                     <div className="flex justify-center py-8">
                                         <Loader2 className="animate-spin text-text-muted" size={24} />
@@ -756,11 +781,10 @@ const AdminDashboard = () => {
                                                 key={status}
                                                 onClick={() => handleStatusChange(selectedReport.id, status)}
                                                 disabled={selectedReport.status === status}
-                                                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors border ${
-                                                    selectedReport.status === status 
-                                                    ? 'bg-accent/20 border-accent/50 text-accent cursor-default'
-                                                    : 'bg-card-alt border-border text-text-muted hover:text-white hover:border-gray-500'
-                                                }`}
+                                                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors border ${selectedReport.status === status
+                                                        ? 'bg-accent/20 border-accent/50 text-accent cursor-default'
+                                                        : 'bg-card-alt border-border text-text-muted hover:text-white hover:border-gray-500'
+                                                    }`}
                                             >
                                                 {status}
                                             </button>
@@ -792,7 +816,7 @@ const AdminDashboard = () => {
                                                         <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-1">Proof Description</p>
                                                         <p className="text-gray-300 italic">"{claim.proof_description}"</p>
                                                     </div>
-                                                    
+
                                                     {claim.claim_status === 'pending' && (
                                                         <div className="flex gap-2 justify-end mt-4 pt-4 border-t border-border/50">
                                                             <button

@@ -41,7 +41,7 @@ class AdminController extends Controller
                     return [
                         'id' => $log->id,
                         'user' => $log->user->name,
-                        'action' => $log->action,
+                        'action' => $log->action_type,
                         'description' => $log->description,
                         'created_at' => $log->created_at->toISOString(),
                     ];
@@ -176,13 +176,13 @@ class AdminController extends Controller
 
             // Log the status change
             $description = "Report #{$report->id} status changed from {$oldStatus} to {$newStatus}";
-            if ($validated['notes']) {
+            if (!empty($validated['notes'])) {
                 $description .= ". Notes: {$validated['notes']}";
             }
 
             ActivityLog::create([
                 'user_id' => auth()->id(),
-                'action' => 'report_status_updated',
+                'action_type' => 'report_status_updated',
                 'description' => $description,
             ]);
 
@@ -194,7 +194,7 @@ class AdminController extends Controller
 
                 ActivityLog::create([
                     'user_id' => auth()->id(),
-                    'action' => 'claims_auto_rejected',
+                    'action_type' => 'claims_auto_rejected',
                     'description' => "All pending claims for Report #{$report->id} auto-rejected due to status change to 'returned'",
                 ]);
             }
