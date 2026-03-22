@@ -21,6 +21,7 @@ const Profile = () => {
         const fetchProfileData = async () => {
             try {
                 setIsLoading(true);
+                // Fetch strictly authenticated user's data (privacy fix)
                 const [reportsRes, claimsRes] = await Promise.all([
                     api.get('/user/reports'),
                     api.get('/user/claims')
@@ -232,17 +233,47 @@ const Profile = () => {
                                                 </span>
                                             </div>
                                             <div className="flex-grow">
-                                                <div className="text-[10px] text-text-muted uppercase font-bold tracking-widest mb-1">Claiming Report:</div>
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className={`badge ${claim.report?.type === 'lost' ? 'badge-lost' : 'badge-found'}`}>
+                                                        {claim.report?.type?.toUpperCase() || 'FOUND'}
+                                                    </span>
+                                                    {claim.report?.campus && (
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted bg-page px-2 py-1 rounded">
+                                                            {claim.report.campus}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <h3 className="font-bold text-base mb-2 text-text-dark line-clamp-2">
                                                     {claim.report?.item_name || 'Item'}
                                                 </h3>
-                                                <p className="text-text-muted text-xs line-clamp-2 mb-4">
-                                                    "{claim.proof_description}"
-                                                </p>
+                                                <details className="mt-2 text-xs" onClick={(e) => e.preventDefault()}>
+                                                    <summary className="font-bold uppercase tracking-widest text-text-muted cursor-pointer hover:text-text-dark transition-colors select-none"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.currentTarget.parentElement.open = !e.currentTarget.parentElement.open;
+                                                        }}>
+                                                        Proof Description
+                                                    </summary>
+                                                    <p className="mt-2 text-text-muted p-2 bg-page rounded-lg italic">
+                                                        "{claim.proof_description}"
+                                                    </p>
+                                                </details>
                                             </div>
-                                            <div className="flex items-center text-text-muted text-xs mt-auto pt-4 border-t border-gray-100">
-                                                <Clock size={14} className="mr-2" />
-                                                <span>Submitted {new Date(claim.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                            <div className="flex flex-col gap-2 mt-auto pt-4 border-t border-gray-100">
+                                                <div className="flex items-center text-text-muted text-xs">
+                                                    <Clock size={14} className="mr-2" />
+                                                    <span>Submitted {new Date(claim.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                                </div>
+                                                {claim.claim_status === 'approved' && (
+                                                    <div className="mt-1 text-[10px] font-bold uppercase tracking-widest bg-emerald-50 text-emerald-600 p-2 rounded-lg text-center">
+                                                        Ready for pickup at OSA {claim.report?.campus || 'campus'}
+                                                    </div>
+                                                )}
+                                                {claim.claim_status === 'rejected' && (
+                                                    <div className="mt-1 text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 p-2 rounded-lg text-center">
+                                                        Not approved — contact OSA for details
+                                                    </div>
+                                                )}
                                             </div>
                                         </Link>
                                     ))}

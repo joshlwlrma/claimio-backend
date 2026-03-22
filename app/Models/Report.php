@@ -29,6 +29,9 @@ class Report extends Model
         'contact_number',
         'status',
         'resolved_at',
+        'is_sensitive',
+        'name_on_item',
+        'expires_at',
     ];
 
     protected function casts(): array
@@ -36,6 +39,8 @@ class Report extends Model
         return [
             'date_occurrence' => 'date',
             'resolved_at' => 'datetime',
+            'expires_at' => 'datetime',
+            'is_sensitive' => 'boolean',
         ];
     }
 

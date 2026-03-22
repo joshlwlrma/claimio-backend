@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Calendar, ChevronRight, Search, Clock } from 'lucide-react';
+import { MapPin, Calendar, ChevronRight, Search, Clock, Lock } from 'lucide-react';
 
 const ReportCard = ({ report }) => {
 
@@ -20,12 +20,24 @@ const ReportCard = ({ report }) => {
             {/* Image / Thumbnail */}
             <div className="h-48 w-full bg-card relative flex items-center justify-center overflow-hidden">
                 {report.images && report.images.length > 0 ? (
-                    <img
-                        src={report.images[0].url}
-                        alt={report.item_name}
-                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300"
-                        onError={(e) => { e.target.src = ''; e.target.className = 'hidden'; }}
-                    />
+                    <>
+                        <img
+                            src={report.images[0].url}
+                            alt={report.item_name}
+                            className={`w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 ${report.is_sensitive ? 'blur-md brightness-75' : ''}`}
+                            onError={(e) => { e.target.src = ''; e.target.className = 'hidden'; }}
+                        />
+                        {report.is_sensitive && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10 pointer-events-none">
+                                <div className="bg-black/60 p-3 rounded-full mb-2 backdrop-blur-sm">
+                                    <Lock size={20} className="text-accent" />
+                                </div>
+                                <span className="text-xs font-bold uppercase tracking-wider bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm">
+                                    Sensitive Item
+                                </span>
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <Search className="text-text-muted/30 w-12 h-12" />
                 )}
@@ -43,7 +55,9 @@ const ReportCard = ({ report }) => {
                 </h3>
 
                 <p className="text-text-muted text-xs line-clamp-2 mb-4 flex-grow">
-                    {report.description || 'No description available'}
+                    {report.is_sensitive && report.name_on_item 
+                        ? report.name_on_item 
+                        : (report.description || 'No description available')}
                 </p>
 
                 <div className="space-y-1.5">

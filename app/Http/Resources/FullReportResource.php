@@ -19,6 +19,8 @@ class FullReportResource extends JsonResource
             'campus' => $this->campus,
             'contact_number' => $this->contact_number,
             'status' => $this->status,
+            'is_sensitive' => (bool) $this->is_sensitive,
+            'name_on_item' => $this->name_on_item,
             'date_occurrence' => $this->date_occurrence,
             'resolved_at' => $this->resolved_at,
             'created_at' => $this->created_at,

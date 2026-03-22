@@ -13,6 +13,8 @@ const ReportForm = () => {
     const [description, setDescription] = useState('');
     const [location, setLocation] = useState('');
     const [campus, setCampus] = useState('');
+    const [isSensitive, setIsSensitive] = useState(false);
+    const [nameOnItem, setNameOnItem] = useState('');
 
     // Image handling
     const [images, setImages] = useState([]);
@@ -76,6 +78,10 @@ const ReportForm = () => {
         formData.append('description', description);
         formData.append('location', location);
         formData.append('campus', campus);
+        formData.append('is_sensitive', isSensitive ? 1 : 0);
+        if (isSensitive) {
+            formData.append('name_on_item', nameOnItem);
+        }
 
         images.forEach((image, index) => {
             formData.append(`images[${index}]`, image);
@@ -234,6 +240,43 @@ const ReportForm = () => {
                                 <option value="casal">Casal Campus</option>
                                 <option value="outside">Outside TIP</option>
                             </select>
+                        </div>
+
+                        {/* Sensitive Item Flag */}
+                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
+                            <label className="flex flex-start gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={isSensitive}
+                                    onChange={(e) => setIsSensitive(e.target.checked)}
+                                    className="mt-1 w-5 h-5 text-accent rounded border-gray-300 focus:ring-accent cursor-pointer shrink-0"
+                                />
+                                <div>
+                                    <span className="block text-sm font-bold text-text-dark">
+                                        This item contains an ID or document with a name on it
+                                    </span>
+                                </div>
+                            </label>
+
+                            {isSensitive && (
+                                <div className="mt-4 pl-8">
+                                    <label htmlFor="nameOnItem" className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-2">
+                                        Name on item <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        id="nameOnItem"
+                                        type="text"
+                                        required
+                                        value={nameOnItem}
+                                        onChange={(e) => setNameOnItem(e.target.value)}
+                                        placeholder="e.g. Juan Fangonilo"
+                                        className="w-full bg-white border border-gray-200 rounded-lg py-2.5 px-4 text-text-dark text-sm focus:outline-none focus:border-accent transition-colors"
+                                    />
+                                    <p className="text-xs text-text-muted mt-2">
+                                        Will be shown publicly as initials only (e.g. J. Fangonilo)
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                         <button type="submit" className="btn-amber w-full py-3.5 text-center">

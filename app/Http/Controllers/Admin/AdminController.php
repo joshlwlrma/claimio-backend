@@ -334,4 +334,100 @@ class AdminController extends Controller
 
         return in_array($to, $validTransitions[$from] ?? []);
     }
+
+    /**
+     * Get claims history for admin
+     */
+    public function claimsHistory(Request $request)
+    {
+        try {
+            $query = Claim::with(['user', 'report']);
+
+            if ($request->has('status') && $request->status && $request->status !== 'all') {
+                $query->where('claim_status', $request->status);
+            }
+
+            if ($request->has('search') && $request->search) {
+                $search = $request->search;
+                $query->whereHas('user', function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+
+            $claims = $query->orderBy('created_at', 'desc')->paginate(15);
+
+            return response()->json([
+                'data' => $claims->items(),
+                'meta' => [
+                    'current_page' => $claims->currentPage(),
+                    'last_page' => $claims->lastPage(),
+                    'total' => $claims->total(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Admin claims history error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch claims history'], 500);
+        }
+    }
+
+    /**
+     * Mark a report as returned
+     */
+    public function markReturned(Request $request, Report $report)
+    {
+        try {
+            if ($report->status !== 'claimed') {
+                return response()->json(['message' => 'Only claimed reports can be marked as returned'], 422);
+            }
+
+            $report->status = 'returned';
+            $report->resolved_at = now();
+            $report->save();
+
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action_type' => 'report_returned',
+                'description' => "Report #{$report->id} marked as returned by admin"
+            ]);
+
+            return response()->json([
+                'message' => 'Report marked as returned successfully',
+                'report' => new FullReportResource($report->load(['user', 'images', 'claims.user']))
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Admin mark returned error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to mark report as returned'], 500);
+        }
+    }
+
+    /**
+     * Restore an expired report
+     */
+    public function restoreReport(Request $request, Report $report)
+    {
+        try {
+            if ($report->status !== 'expired') {
+                return response()->json(['message' => 'Only expired reports can be restored'], 422);
+            }
+
+            $report->status = 'pending';
+            $report->expires_at = $report->type === 'lost' ? now()->addDays(90) : now()->addDays(30);
+            $report->save();
+
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action_type' => 'report_restored',
+                'description' => "Report #{$report->id} restored by admin"
+            ]);
+
+            return response()->json([
+                'message' => 'Report restored successfully',
+                'report' => new FullReportResource($report->load(['user', 'images', 'claims.user']))
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Admin restore report error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to restore report'], 500);
+        }
+    }
 }

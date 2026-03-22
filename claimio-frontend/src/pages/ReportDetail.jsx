@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import UserBar from '../components/UserBar';
-import { ArrowLeft, MapPin, Calendar, AlertCircle, Loader2, Image as ImageIcon, Send, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, AlertCircle, Loader2, Image as ImageIcon, Send, CheckCircle2, Lock, Trash2 } from 'lucide-react';
 
 const ReportDetail = () => {
     const { id } = useParams();
@@ -19,6 +19,8 @@ const ReportDetail = () => {
     const [proof, setProof] = useState('');
     const [isClaiming, setIsClaiming] = useState(false);
     const [claimSuccess, setClaimSuccess] = useState('');
+    const [actionMessage, setActionMessage] = useState('');
+    const [actionError, setActionError] = useState('');
 
     useEffect(() => {
         fetchReportDetails();
@@ -68,7 +70,9 @@ const ReportDetail = () => {
     };
 
     // UI Helpers
-    const isOwner = user && report && user.id === report.user_id;
+    const isAdmin = user && user.role === 'admin';
+    const isOwner = user && report && user.id === report.user?.id;
+    const hasFullAccess = isOwner || isAdmin;
     const canClaim = user && !isOwner && report?.status !== 'claimed' && report?.status !== 'returned';
 
     const formattedDate = report?.created_at
@@ -126,6 +130,18 @@ const ReportDetail = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
 
+                    {/* Action Message Toast */}
+                    {actionMessage && (
+                        <div className="fixed top-20 right-6 z-50 bg-accent text-black px-6 py-3 rounded-xl text-sm font-bold shadow-2xl">
+                            {actionMessage}
+                        </div>
+                    )}
+                    {actionError && (
+                        <div className="fixed top-20 right-6 z-50 bg-red-500 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-2xl">
+                            {actionError}
+                        </div>
+                    )}
+
                     {/* LEFT Column — Details (dark card) */}
                     <div className="lg:col-span-3 space-y-6">
 
@@ -159,13 +175,51 @@ const ReportDetail = () => {
                                 </div>
                             </div>
 
-                            {/* Description */}
-                            {report.description && (
-                                <div className="border-t border-border pt-6">
+                            {/* Description / Name on Item */}
+                            {report.is_sensitive && !hasFullAccess ? (
+                                <div className="border-t border-border pt-6 mt-6">
+                                    <h2 className="text-xs font-bold uppercase tracking-widest text-text-muted mb-3">Name on item</h2>
+                                    <p className="text-gray-300 leading-relaxed whitespace-pre-wrap font-medium">
+                                        {report.name_on_item}
+                                    </p>
+                                </div>
+                            ) : report.description && (
+                                <div className="border-t border-border pt-6 mt-6">
                                     <h2 className="text-xs font-bold uppercase tracking-widest text-text-muted mb-3">Description</h2>
                                     <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
                                         {report.description}
                                     </p>
+                                    {report.is_sensitive && report.name_on_item && (
+                                        <div className="mt-4">
+                                            <h2 className="text-xs font-bold uppercase tracking-widest text-text-muted mb-2">Name on item</h2>
+                                            <p className="text-accent font-medium">{report.name_on_item}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Owner Delete Button */}
+                            {isOwner && (
+                                <div className="mt-8 pt-6 border-t border-border flex justify-end">
+                                    <button 
+                                        onClick={async () => {
+                                            if (window.confirm("Are you sure you want to delete this report? This cannot be undone.")) {
+                                                try {
+                                                    await api.delete(`/reports/${report.id}`);
+                                                    setActionMessage('Report deleted successfully');
+                                                    setTimeout(() => navigate('/dashboard'), 1500);
+                                                } catch (err) {
+                                                    console.error(err);
+                                                    setActionError('Failed to delete report.');
+                                                    setTimeout(() => setActionError(''), 3000);
+                                                }
+                                            }
+                                        }}
+                                        className="text-xs font-bold uppercase tracking-widest text-red-500/70 hover:text-red-500 transition-colors flex items-center"
+                                    >
+                                        <Trash2 size={16} className="mr-2" />
+                                        Delete Report
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -229,16 +283,27 @@ const ReportDetail = () => {
                             {report.images && report.images.length > 0 ? (
                                 <div className="space-y-3">
                                     {report.images.map((img, i) => (
-                                        <div key={i} className="rounded-xl overflow-hidden border border-border">
+                                        <div key={i} className="rounded-xl overflow-hidden border border-border relative">
                                             <img
                                                 src={img.url}
                                                 alt="Report item"
-                                                className="w-full h-auto object-cover"
+                                                className={`w-full h-auto object-cover ${report.is_sensitive && !hasFullAccess ? 'blur-md brightness-75 select-none' : ''}`}
+                                                draggable={report.is_sensitive && !hasFullAccess ? 'false' : 'true'}
                                                 onError={(e) => {
                                                     e.target.src = '';
                                                     e.target.parentElement.innerHTML = '<div class="w-full h-48 flex items-center justify-center text-xs text-text-muted bg-card-alt">Failed to load</div>';
                                                 }}
                                             />
+                                            {report.is_sensitive && !hasFullAccess && (
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 z-10 pointer-events-none">
+                                                    <div className="bg-black/70 p-4 rounded-full mb-3 backdrop-blur-md">
+                                                        <Lock size={24} className="text-accent" />
+                                                    </div>
+                                                    <span className="text-sm font-bold text-white bg-black/70 px-4 py-2 rounded-lg backdrop-blur-md shadow-lg">
+                                                        Submit a claim to view full details
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>

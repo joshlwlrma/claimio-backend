@@ -4,14 +4,16 @@ import api from '../services/api';
 import {
     BarChart3, Users, FileText, AlertTriangle, CheckCircle2, XCircle,
     Download, Search, ChevronLeft, ChevronRight, Loader2, Eye,
-    Clock, Shield, Trash2, Edit3, X, Link2, Calendar, MapPin, Building2
+    Clock, Shield, Trash2, Edit3, X, Link2, Calendar, MapPin, Building2,
+    FileSearch
 } from 'lucide-react';
 
 const STATUS_COLORS = {
-    pending: 'badge-pending',
-    matched: 'badge-matched',
-    claimed: 'badge-claimed',
-    returned: 'badge-returned',
+    pending: 'bg-amber-500/20 text-amber-500 border border-amber-500/30 font-bold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider',
+    matched: 'bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider',
+    claimed: 'bg-orange-500/20 text-orange-400 border border-orange-500/30 font-bold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider',
+    returned: 'bg-gray-500/20 text-gray-400 border border-gray-500/30 font-bold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider',
+    expired: 'bg-gray-800 text-gray-400 border border-gray-700 font-bold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider',
 };
 
 const CLAIM_COLORS = {
@@ -57,6 +59,17 @@ const AdminDashboard = () => {
     // Matches state
     const [matches, setMatches] = useState([]);
     const [matchesLoading, setMatchesLoading] = useState(false);
+
+    // Claims History state
+    const [historyClaims, setHistoryClaims] = useState([]);
+    const [historyClaimsMeta, setHistoryClaimsMeta] = useState({});
+    const [claimsLoading, setClaimsLoading] = useState(false);
+    const [claimSearch, setClaimSearch] = useState('');
+    const [claimStatus, setClaimStatus] = useState('');
+    const [claimPage, setClaimPage] = useState(1);
+    
+    // expand tracking
+    const [expandedProofs, setExpandedProofs] = useState({});
 
     // ── Data Fetching ───────────────────────────────
 
@@ -148,6 +161,29 @@ const AdminDashboard = () => {
         }
     }, [adminTab, fetchMatches]);
 
+    const fetchClaimsHistory = useCallback(async (page = 1) => {
+        try {
+            setClaimsLoading(true);
+            const params = { page };
+            if (claimSearch.trim()) params.search = claimSearch.trim();
+            if (claimStatus) params.status = claimStatus;
+
+            const { data } = await api.get('/admin/claims', { params });
+            setHistoryClaims(data.data || []);
+            setHistoryClaimsMeta(data.meta || {});
+        } catch (err) {
+            console.error('Error fetching claims history:', err);
+        } finally {
+            setClaimsLoading(false);
+        }
+    }, [claimSearch, claimStatus]);
+
+    useEffect(() => {
+        if (adminTab === 'claims') {
+            fetchClaimsHistory(claimPage);
+        }
+    }, [adminTab, claimPage, fetchClaimsHistory]);
+
     // Fetch export preview when filters change
     useEffect(() => {
         if (adminTab !== 'export') return;
@@ -233,6 +269,38 @@ const AdminDashboard = () => {
         }
     };
 
+    const handleMarkReturned = async (reportId) => {
+        try {
+            await api.put(`/admin/reports/${reportId}/return`);
+            showMessage(`Report marked as returned.`);
+            fetchReports(currentPage);
+            fetchStats();
+            if (selectedReport?.id === reportId) {
+                setSelectedReport(prev => ({ ...prev, status: 'returned' }));
+            }
+        } catch (err) {
+            showMessage(err.response?.data?.message || 'Failed to mark as returned.');
+        }
+    };
+
+    const handleRestoreReport = async (reportId) => {
+        try {
+            await api.put(`/admin/reports/${reportId}/restore`);
+            showMessage(`Report restored successfully.`);
+            fetchReports(currentPage);
+            fetchStats();
+            if (selectedReport?.id === reportId) {
+                setSelectedReport(prev => ({ ...prev, status: 'pending' }));
+            }
+        } catch (err) {
+            showMessage(err.response?.data?.message || 'Failed to restore report.');
+        }
+    };
+
+    const toggleProof = (id) => {
+        setExpandedProofs(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
     // ── Render ───────────────────────────────────────
 
     return (
@@ -277,8 +345,8 @@ const AdminDashboard = () => {
                 )}
 
                 {/* Tab navigation */}
-                <div className="flex gap-2 mb-6">
-                    {['reports', 'export', 'matches'].map(tab => (
+                <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+                    {['reports', 'export', 'matches', 'claims'].map(tab => (
                         <button
                             key={tab}
                             onClick={() => setAdminTab(tab)}
@@ -317,6 +385,7 @@ const AdminDashboard = () => {
                                 <option value="matched">Matched</option>
                                 <option value="claimed">Claimed</option>
                                 <option value="returned">Returned</option>
+                                <option value="expired">Expired</option>
                             </select>
 
                             <select
@@ -742,6 +811,130 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                 )}
+
+                {/* ════════ CLAIMS HISTORY TAB ════════ */}
+                {adminTab === 'claims' && (
+                    <>
+                        <div className="bg-card border border-border rounded-xl p-4 mb-6 flex flex-col md:flex-row gap-4 items-center">
+                            <select
+                                value={claimStatus}
+                                onChange={e => { setClaimStatus(e.target.value); setClaimPage(1); }}
+                                className="bg-card-alt border border-border rounded-lg px-4 py-2.5 text-sm text-white focus:border-accent focus:outline-none w-full md:w-auto appearance-none cursor-pointer"
+                            >
+                                <option value="">All Statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                            
+                            <div className="relative flex-1 w-full">
+                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                                <input
+                                    type="text"
+                                    placeholder="Search student name or email..."
+                                    value={claimSearch}
+                                    onChange={e => { setClaimSearch(e.target.value); setClaimPage(1); }}
+                                    className="w-full pl-10 pr-4 py-2.5 bg-card-alt border border-border rounded-lg text-sm text-white focus:border-accent focus:outline-none transition-colors"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="bg-card border border-border rounded-xl overflow-hidden">
+                            {claimsLoading ? (
+                                <div className="flex items-center justify-center py-20">
+                                    <Loader2 className="animate-spin text-text-muted" size={32} />
+                                </div>
+                            ) : historyClaims.length === 0 ? (
+                                <div className="text-center py-20 text-text-muted">
+                                    <FileSearch size={40} className="mx-auto mb-4 opacity-50" />
+                                    <p className="font-semibold uppercase tracking-wider">No claims found</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-sm whitespace-nowrap">
+                                        <thead className="bg-card-alt text-xs font-bold uppercase tracking-wider text-text-muted border-b border-border">
+                                            <tr>
+                                                <th className="px-4 py-3">Claimant</th>
+                                                <th className="px-4 py-3">Item</th>
+                                                <th className="px-4 py-3">Type</th>
+                                                <th className="px-4 py-3">Campus</th>
+                                                <th className="px-4 py-3">Status</th>
+                                                <th className="px-4 py-3">Date</th>
+                                                <th className="px-4 py-3">Proof</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border/50">
+                                            {historyClaims.map(claim => (
+                                                <tr key={claim.id} className="hover:bg-accent/5 transition-colors">
+                                                    <td className="px-4 py-3">
+                                                        <div className="text-white font-medium">{claim.user?.name}</div>
+                                                        <div className="text-text-muted text-xs">{claim.user?.email}</div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-white max-w-[200px] truncate" title={claim.report?.item_name}>
+                                                        {claim.report?.item_name}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <span className={`badge ${claim.report?.type === 'lost' ? 'badge-lost' : 'badge-found'}`}>
+                                                            {claim.report?.type?.toUpperCase()}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-text-muted uppercase text-xs font-bold tracking-wider">
+                                                        {claim.report?.campus || 'N/A'}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <span className={`text-xs font-bold uppercase px-3 py-1 rounded-full ${CLAIM_COLORS[claim.claim_status] || 'bg-gray-500/20 text-gray-400'}`}>
+                                                            {claim.claim_status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-text-muted text-xs">
+                                                        {new Date(claim.created_at).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="px-4 py-3 max-w-[250px] whitespace-normal">
+                                                        <div 
+                                                            onClick={() => toggleProof(claim.id)}
+                                                            className="cursor-pointer text-gray-300 hover:text-white transition-colors text-xs bg-card-alt p-2 rounded border border-border"
+                                                        >
+                                                            {expandedProofs[claim.id] ? claim.proof_description : (
+                                                                claim.proof_description?.length > 40 
+                                                                    ? claim.proof_description.substring(0, 40) + '...' 
+                                                                    : claim.proof_description
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            {historyClaimsMeta?.last_page > 1 && (
+                                <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-card-alt">
+                                    <span className="text-xs text-text-muted">
+                                        Page {historyClaimsMeta.current_page} of {historyClaimsMeta.last_page} ({historyClaimsMeta.total} claims)
+                                    </span>
+                                    <div className="flex gap-2">
+                                        <button
+                                            disabled={historyClaimsMeta.current_page <= 1}
+                                            onClick={() => setClaimPage(prev => prev - 1)}
+                                            className="p-2 rounded-lg border border-border hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            <ChevronLeft size={16} />
+                                        </button>
+                                        <button
+                                            disabled={historyClaimsMeta.current_page >= historyClaimsMeta.last_page}
+                                            onClick={() => setClaimPage(prev => prev + 1)}
+                                            className="p-2 rounded-lg border border-border hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            <ChevronRight size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
+
                 {/* ════════ REPORT DETAIL MODAL ════════ */}
                 {selectedReport && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -798,9 +991,51 @@ const AdminDashboard = () => {
                                     </div>
                                 </div>
 
+                                {/* Images Section */}
+                                <div className="border-t border-border pt-6">
+                                    <h3 className="text-sm font-bold uppercase tracking-widest text-white mb-4">Images</h3>
+                                    {selectedReport.images && selectedReport.images.length > 0 ? (
+                                        <div className="flex gap-4 overflow-x-auto pb-4">
+                                            {selectedReport.images.map(img => (
+                                                <div key={img.id} className="relative shrink-0 w-32 h-32 rounded-xl overflow-hidden border border-border">
+                                                    <img
+                                                        src={img.url}
+                                                        alt="Report Image"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="bg-card-alt border border-border rounded-xl p-8 text-center text-text-muted text-sm italic">
+                                            No images provided for this report.
+                                        </div>
+                                    )}
+                                </div>
+
                                 {/* Actions - Change Status */}
                                 <div className="border-t border-border pt-6">
-                                    <h3 className="text-sm font-bold uppercase tracking-widest text-white mb-4">Manage Status</h3>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-sm font-bold uppercase tracking-widest text-white">Manage Status</h3>
+                                        
+                                        {selectedReport.status === 'claimed' && selectedReport.claims?.some(c => c.claim_status === 'approved') && (
+                                            <button
+                                                onClick={() => handleMarkReturned(selectedReport.id)}
+                                                className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                                            >
+                                                <CheckCircle2 size={16} />
+                                                Mark as Returned
+                                            </button>
+                                        )}
+                                        {selectedReport.status === 'expired' && (
+                                            <button
+                                                onClick={() => handleRestoreReport(selectedReport.id)}
+                                                className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-lg shadow-gray-700/20 flex items-center gap-2"
+                                            >
+                                                Restore Report
+                                            </button>
+                                        )}
+                                    </div>
                                     <div className="flex flex-wrap gap-2">
                                         {['pending', 'matched', 'claimed', 'returned'].map(status => (
                                             <button

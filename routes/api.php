@@ -65,12 +65,23 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::put('/reports/{report}/status', [AdminController::class , 'updateReportStatus'])
         ->name('admin.reports.update-status');
 
+    // Mark as Returned
+    Route::put('/reports/{report}/return', [AdminController::class, 'markReturned'])
+        ->name('admin.reports.return');
+
+    // Restore Expired Report
+    Route::put('/reports/{report}/restore', [AdminController::class, 'restoreReport'])
+        ->name('admin.reports.restore');
+
     // CSV export
     Route::get('/reports/export', [AdminController::class , 'export'])->name('admin.reports.export');
 
     // Approve or reject a claim
     Route::put('/claims/{claim}/status', [ClaimController::class , 'updateStatus'])
         ->name('admin.claims.update-status');
+
+    // Claims history (admin)
+    Route::get('/claims', [AdminController::class, 'claimsHistory'])->name('admin.claims.history');
 
     // Potential matches
     Route::get('/matches', [MatchController::class, 'index'])->name('admin.matches.index');

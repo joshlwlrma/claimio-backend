@@ -34,6 +34,8 @@ class StoreReportRequest extends FormRequest
             'campus' => 'required|in:arlegui,casal,outside',
             'date_occurrence' => 'nullable|date|before_or_equal:today',
             'contact_number' => 'nullable|string|max:20',
+            'is_sensitive' => 'nullable|boolean',
+            'name_on_item' => 'required_if:is_sensitive,true|nullable|string|max:100',
             'images' => 'nullable|array|max:5',
             'images.*' => 'image|mimes:jpg,jpeg,png|max:5120', // 5 MB each
         ];

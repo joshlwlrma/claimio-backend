@@ -44,6 +44,9 @@ class ReportController extends Controller
     {
         $query = Report::with(['user:id,name,email', 'images']);
 
+        // Exclude expired reports from public listing
+        $query->where('status', '!=', 'expired');
+
         // Filter by type
         if ($request->filled('type')) {
             $query->where('type', $request->input('type'));
@@ -145,9 +148,15 @@ class ReportController extends Controller
                 'campus' => $validated['campus'],
                 'date_occurrence' => $validated['date_occurrence'] ?? now()->toDateString(),
                 'contact_number' => $validated['contact_number'] ?? null,
+                'is_sensitive' => $validated['is_sensitive'] ?? false,
+                'name_on_item' => $validated['name_on_item'] ?? null,
                 'status' => 'pending',
                 'resolved_at' => null,
             ]);
+
+            // Set expires_at based on type
+            $report->expires_at = $validated['type'] === 'lost' ? now()->addDays(90) : now()->addDays(30);
+            $report->save();
 
             // 2. Handle image uploads
             if ($request->hasFile('images')) {
