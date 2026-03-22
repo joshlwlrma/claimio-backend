@@ -76,11 +76,30 @@ class ClaimController extends Controller
             ], 409);
         }
 
-        $claim = DB::transaction(function () use ($request, $report, $user) {
+        $direction = $request->input('direction', 'owner_claiming_found');
+
+        // New guard: validate direction against report type
+        if ($direction === 'finder_reporting_found' && $report->type !== 'lost') {
+            return response()->json([
+                'success' => false,
+                'message' => 'You can only report finding a "lost" item.',
+            ], 403);
+        }
+
+        if ($direction === 'owner_claiming_found' && $report->type !== 'found') {
+            return response()->json([
+                'success' => false,
+                'message' => 'You can only claim ownership of a "found" item.',
+            ], 403);
+        }
+
+        $claim = DB::transaction(function () use ($request, $report, $user, $direction) {
             $claim = Claim::create([
                 'report_id' => $report->id,
                 'user_id' => $user->id,
-                'proof_description' => $request->validated('proof_description'),
+                'proof_description' => $request->validated('proof_description') ?? 'Not applicable (Finder Report)',
+                'direction' => $direction,
+                'finder_message' => $request->validated('finder_message'),
                 'claim_status' => 'pending',
             ]);
 
@@ -137,8 +156,14 @@ class ClaimController extends Controller
             $claim->update(['claim_status' => $newStatus]);
 
             if ($newStatus === 'approved') {
-                // Update the parent report to "claimed"
-                $claim->report->update(['status' => 'claimed']);
+                if ($claim->direction === 'finder_reporting_found') {
+                    // Update the parent report to "matched"
+                    $claim->report->update(['status' => 'matched']);
+                }
+                else {
+                    // Update the parent report to "claimed"
+                    $claim->report->update(['status' => 'claimed']);
+                }
 
                 // Auto-reject all other pending claims on this report
                 Claim::where('report_id', $claim->report_id)
@@ -147,29 +172,66 @@ class ClaimController extends Controller
                     ->update(['claim_status' => 'rejected']);
             }
 
-            ActivityLog::log(
-                $user->id,
-                "claim_{$newStatus}",
-                "Admin {$newStatus} claim #{$claim->id} on report #{$claim->report_id}"
-            );
+            if ($newStatus === 'approved' && $claim->direction === 'finder_reporting_found') {
+                ActivityLog::log(
+                    $user->id,
+                    'item_matched_via_finder',
+                    "Report #{$claim->report->id} '{$claim->report->item_name}' matched — finder report approved by admin"
+                );
+            }
+            else {
+                ActivityLog::log(
+                    $user->id,
+                    "claim_{$newStatus}",
+                    "Admin {$newStatus} claim #{$claim->id} on report #{$claim->report_id}"
+                );
+            }
         });
 
-        // Send SMS notification to claimant
+        // Send SMS and In-App notification
         try {
             $smsService = new SmsService();
             $report = $claim->report;
-            $claimant = $claim->user;
 
-            if ($claimant && $claimant->phone_number) {
-                $message = $newStatus === 'approved'
-                    ? "Hi {$claimant->name}! Your claim for '{$report->item_name}' has been approved. Please visit the TIP OSA office to claim your item. - Claimio"
-                    : "Hi {$claimant->name}! Your claim for '{$report->item_name}' was not approved. You may contact the TIP OSA office for more info. - Claimio";
+            if ($newStatus === 'approved' && $claim->direction === 'finder_reporting_found') {
+                // Notify the report OWNER
+                $owner = $report->user;
+                if ($owner) {
+                    $appMsg = "Good news! Someone found your lost item '{$report->item_name}'. Please visit the TIP OSA office to coordinate pickup.";
+                    \App\Services\NotificationService::notify($owner->id, 'item_matched', $appMsg);
 
-                $smsService->send($claimant->phone_number, $message, $claimant->id);
+                    if ($owner->phone_number) {
+                        $smsMsg = "Hi {$owner->name}! Good news — someone has found your lost item '{$report->item_name}'. Please visit the TIP OSA office to coordinate the handover. - Claimio";
+                        $smsService->send($owner->phone_number, $smsMsg, $owner->id);
+                    }
+                }
             }
-        } catch (\Exception $e) {
-            // SMS failure should never block the claim action
-            \Illuminate\Support\Facades\Log::error('SMS notification error: ' . $e->getMessage());
+            else {
+                // Keep existing behavior (notify CLAIMANT)
+                $claimant = $claim->user;
+                if ($claimant) {
+                    if ($newStatus === 'approved') {
+                        $appMsg = "Your claim for '{$report->item_name}' has been approved. Please visit the TIP OSA office to claim your item.";
+                        \App\Services\NotificationService::notify($claimant->id, 'claim_approved', $appMsg);
+                    }
+                    else {
+                        $appMsg = "Your claim for '{$report->item_name}' was not approved. Contact TIP OSA for more details.";
+                        \App\Services\NotificationService::notify($claimant->id, 'claim_rejected', $appMsg);
+                    }
+
+                    if ($claimant->phone_number) {
+                        $smsMsg = $newStatus === 'approved'
+                            ? "Hi {$claimant->name}! Your claim for '{$report->item_name}' has been approved. Please visit the TIP OSA office to claim your item. - Claimio"
+                            : "Hi {$claimant->name}! Your claim for '{$report->item_name}' was not approved. You may contact the TIP OSA office for more info. - Claimio";
+
+                        $smsService->send($claimant->phone_number, $smsMsg, $claimant->id);
+                    }
+                }
+            }
+        }
+        catch (\Exception $e) {
+            // Notification failure should never block the claim action
+            \Illuminate\Support\Facades\Log::error('Notification error: ' . $e->getMessage());
         }
 
         $claim->load(['user:id,name,email', 'report']);

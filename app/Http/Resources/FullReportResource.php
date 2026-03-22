@@ -41,6 +41,8 @@ class FullReportResource extends JsonResource
             'id' => $claim->id,
             'claim_status' => $claim->claim_status,
             'proof_description' => $claim->proof_description,
+            'direction' => $claim->direction,
+            'finder_message' => $claim->finder_message,
             'created_at' => $claim->created_at,
             'user' => [
             'id' => $claim->user->id,

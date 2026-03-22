@@ -47,8 +47,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/reports/{report}', [ReportController::class , 'update'])->name('reports.update');
     Route::delete('/reports/{report}', [ReportController::class , 'destroy'])->name('reports.destroy');
 
+    // Notifications
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
+    Route::post('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markRead'])->name('notifications.markRead');
+
     // Claims — submit a claim on a report
-    Route::post('/reports/{report}/claims', [ClaimController::class , 'store'])->name('claims.store');    });
+    Route::post('/reports/{report}/claims', [ClaimController::class , 'store'])->name('claims.store');
+});
 
 // ───────────────────────────────────────────────
 // Admin Routes (auth:sanctum + admin middleware)

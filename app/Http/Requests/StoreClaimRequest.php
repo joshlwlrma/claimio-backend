@@ -20,7 +20,9 @@ class StoreClaimRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'proof_description' => 'required|string|max:2000',
+            'direction' => 'nullable|in:owner_claiming_found,finder_reporting_found',
+            'proof_description' => 'required_unless:direction,finder_reporting_found|nullable|string|max:2000',
+            'finder_message' => 'required_if:direction,finder_reporting_found|nullable|string|max:500',
         ];
     }
 

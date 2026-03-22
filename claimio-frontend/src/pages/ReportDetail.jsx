@@ -22,6 +22,9 @@ const ReportDetail = () => {
     const [actionMessage, setActionMessage] = useState('');
     const [actionError, setActionError] = useState('');
 
+    // Finder report state
+    const [finderMessage, setFinderMessage] = useState('');
+
     useEffect(() => {
         fetchReportDetails();
     }, [id]);
@@ -64,6 +67,29 @@ const ReportDetail = () => {
         } catch (err) {
             console.error("Claim submission failed", err);
             setClaimSuccess('Failed to submit claim. Please try again.');
+        } finally {
+            setIsClaiming(false);
+        }
+    };
+
+    const submitFinderReport = async (e) => {
+        e.preventDefault();
+        if (!finderMessage.trim()) return;
+
+        setIsClaiming(true);
+        setClaimSuccess('');
+
+        try {
+            await api.post(`/reports/${id}/claims`, { 
+                direction: 'finder_reporting_found',
+                finder_message: finderMessage 
+            });
+            setClaimSuccess('Thank you! The owner has been notified.');
+            setFinderMessage('');
+            fetchReportDetails();
+        } catch (err) {
+            console.error("Finder report submission failed", err);
+            setClaimSuccess('Failed to submit report. Please try again.');
         } finally {
             setIsClaiming(false);
         }
@@ -256,6 +282,47 @@ const ReportDetail = () => {
                                         >
                                             {isClaiming ? <Loader2 className="animate-spin mr-2" size={18} /> : <Send className="mr-2" size={18} />}
                                             Submit Claim
+                                        </button>
+                                    </form>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Finder Report Section */}
+                        {canClaim && report.type === 'lost' && !report.claims?.some(c => c.user?.id === user?.id && c.direction === 'finder_reporting_found') && (
+                            <div className="bg-card rounded-2xl p-8 border border-border relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500" />
+
+                                <h2 className="text-xl font-bold text-white mb-2 uppercase tracking-wide">Did you find this item?</h2>
+                                <p className="text-text-muted text-sm mb-6">
+                                    Let the owner know you found their item.
+                                </p>
+
+                                {claimSuccess ? (
+                                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-6 rounded-xl flex items-center font-bold tracking-wide">
+                                        <CheckCircle2 className="mr-3" size={24} />
+                                        {claimSuccess}
+                                    </div>
+                                ) : (
+                                    <form onSubmit={submitFinderReport}>
+                                        <label className="block text-xs font-bold uppercase tracking-widest text-text-muted mb-2">
+                                            Where did you find it? What did you do with it?
+                                        </label>
+                                        <textarea
+                                            required
+                                            value={finderMessage}
+                                            onChange={(e) => setFinderMessage(e.target.value)}
+                                            rows="3"
+                                            placeholder="e.g. Found near the library, surrendered to OSA Arlegui"
+                                            className="input-dark mb-4 resize-none"
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={isClaiming || !finderMessage.trim()}
+                                            className="flex items-center justify-center px-6 py-3 rounded-xl font-bold uppercase tracking-widest shadow-lg transition-colors bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 disabled:cursor-not-allowed w-auto"
+                                        >
+                                            {isClaiming ? <Loader2 className="animate-spin mr-2" size={18} /> : <Send className="mr-2" size={18} />}
+                                            Submit Finder Report
                                         </button>
                                     </form>
                                 )}

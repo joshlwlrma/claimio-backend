@@ -42,6 +42,10 @@ class ExpireReports extends Command
             $report->status = 'expired';
             $report->save();
 
+            $days = $report->type === 'lost' ? 90 : 30;
+            $appMsg = "Your report for '{$report->item_name}' has expired after {$days} days and has been archived.";
+            \App\Services\NotificationService::notify($report->user_id, 'report_expired', $appMsg);
+
             ActivityLog::create([
                 'user_id' => null,
                 'action_type' => 'report_expired',

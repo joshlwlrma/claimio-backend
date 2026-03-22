@@ -857,10 +857,11 @@ const AdminDashboard = () => {
                                                 <th className="px-4 py-3">Claimant</th>
                                                 <th className="px-4 py-3">Item</th>
                                                 <th className="px-4 py-3">Type</th>
+                                                <th className="px-4 py-3">Direction</th>
                                                 <th className="px-4 py-3">Campus</th>
                                                 <th className="px-4 py-3">Status</th>
                                                 <th className="px-4 py-3">Date</th>
-                                                <th className="px-4 py-3">Proof</th>
+                                                <th className="px-4 py-3">Proof / Message</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-border/50">
@@ -878,6 +879,13 @@ const AdminDashboard = () => {
                                                             {claim.report?.type?.toUpperCase()}
                                                         </span>
                                                     </td>
+                                                    <td className="px-4 py-3">
+                                                        {claim.direction === 'finder_reporting_found' ? (
+                                                            <span className="badge bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Finder Report</span>
+                                                        ) : (
+                                                            <span className="badge bg-amber-500/20 text-amber-500 border-amber-500/30">Ownership Claim</span>
+                                                        )}
+                                                    </td>
                                                     <td className="px-4 py-3 text-text-muted uppercase text-xs font-bold tracking-wider">
                                                         {claim.report?.campus || 'N/A'}
                                                     </td>
@@ -894,10 +902,24 @@ const AdminDashboard = () => {
                                                             onClick={() => toggleProof(claim.id)}
                                                             className="cursor-pointer text-gray-300 hover:text-white transition-colors text-xs bg-card-alt p-2 rounded border border-border"
                                                         >
-                                                            {expandedProofs[claim.id] ? claim.proof_description : (
-                                                                claim.proof_description?.length > 40 
-                                                                    ? claim.proof_description.substring(0, 40) + '...' 
-                                                                    : claim.proof_description
+                                                            {claim.direction === 'finder_reporting_found' ? (
+                                                                <>
+                                                                    <strong className="text-text-muted mb-1 block cursor-pointer">Finder Message:</strong>
+                                                                    {expandedProofs[claim.id] ? claim.finder_message : (
+                                                                        claim.finder_message?.length > 40 
+                                                                            ? claim.finder_message.substring(0, 40) + '...' 
+                                                                            : claim.finder_message
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <strong className="text-text-muted mb-1 block cursor-pointer">Proof:</strong>
+                                                                    {expandedProofs[claim.id] ? claim.proof_description : (
+                                                                        claim.proof_description?.length > 40 
+                                                                            ? claim.proof_description.substring(0, 40) + '...' 
+                                                                            : claim.proof_description
+                                                                    )}
+                                                                </>
                                                             )}
                                                         </div>
                                                     </td>
@@ -1069,13 +1091,29 @@ const AdminDashboard = () => {
                                                             <p className="text-white font-bold">{claim.user?.name}</p>
                                                             <p className="text-text-muted text-xs">{claim.user?.email}</p>
                                                         </div>
-                                                        <span className={`text-xs font-bold uppercase px-3 py-1 rounded-full ${CLAIM_COLORS[claim.claim_status] || 'bg-gray-500/20 text-gray-400'}`}>
-                                                            {claim.claim_status}
-                                                        </span>
+                                                        <div className="flex flex-col items-end gap-2">
+                                                            <span className={`text-xs font-bold uppercase px-3 py-1 rounded-full ${CLAIM_COLORS[claim.claim_status] || 'bg-gray-500/20 text-gray-400'}`}>
+                                                                {claim.claim_status}
+                                                            </span>
+                                                            {claim.direction === 'finder_reporting_found' ? (
+                                                                <span className="badge bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Finder Report</span>
+                                                            ) : (
+                                                                <span className="badge bg-amber-500/20 text-amber-500 border-amber-500/30">Ownership Claim</span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <div className="mb-4">
-                                                        <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-1">Proof Description</p>
-                                                        <p className="text-gray-300 italic">"{claim.proof_description}"</p>
+                                                        {claim.direction === 'finder_reporting_found' ? (
+                                                            <>
+                                                                <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-1">Finder Message</p>
+                                                                <p className="text-emerald-400 italic">"{claim.finder_message}"</p>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-1">Proof Description</p>
+                                                                <p className="text-gray-300 italic">"{claim.proof_description}"</p>
+                                                            </>
+                                                        )}
                                                     </div>
 
                                                     {claim.claim_status === 'pending' && (
