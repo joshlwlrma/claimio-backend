@@ -12,11 +12,18 @@ use Illuminate\Database\Eloquent\Model;
 class SmsLog extends Model
 {
     protected $table = 'sms_logs';
+    
+    public $timestamps = false;
 
     protected $fillable = [
+        'user_id',
         'recipient',
         'message',
         'status',
-        'response',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

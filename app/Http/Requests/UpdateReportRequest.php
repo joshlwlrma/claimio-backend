@@ -31,6 +31,7 @@ class UpdateReportRequest extends FormRequest
             'category' => 'sometimes|string|max:100',
             'description' => 'sometimes|string|max:2000',
             'location' => 'sometimes|string|max:255',
+            'campus' => 'sometimes|in:arlegui,casal,outside',
             'date_occurrence' => 'sometimes|date|before_or_equal:today',
             'contact_number' => 'nullable|string|max:20',
             'images' => 'nullable|array|max:5',

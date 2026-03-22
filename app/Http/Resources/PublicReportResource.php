@@ -14,6 +14,7 @@ class PublicReportResource extends JsonResource
             'type' => $this->type,
             'item_name' => $this->item_name,
             'category' => $this->category,
+            'campus' => $this->campus,
             'status' => $this->status,
             'date_occurrence' => $this->date_occurrence,
             'created_at' => $this->created_at,

@@ -6,6 +6,7 @@ use App\Http\Requests\StoreClaimRequest;
 use App\Models\ActivityLog;
 use App\Models\Claim;
 use App\Models\Report;
+use App\Services\SmsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -153,31 +154,18 @@ class ClaimController extends Controller
             );
         });
 
-        // Send SMS notifications (fire-and-forget, non-blocking)
+        // Send SMS notification to claimant
         try {
-            $smsService = new \App\Services\SmsService();
+            $smsService = new SmsService();
             $report = $claim->report;
             $claimant = $claim->user;
-            $reportOwner = $report->user;
 
-            // Notify the claimant
-            if ($claimant) {
-                $claimantMsg = $newStatus === 'approved'
-                    ? "Claimio: Your claim on \"{$report->item_name}\" has been APPROVED! Please visit the office to collect your item."
-                    : "Claimio: Your claim on \"{$report->item_name}\" has been rejected. If you believe this is an error, please contact the admin.";
+            if ($claimant && $claimant->phone_number) {
+                $message = $newStatus === 'approved'
+                    ? "Hi {$claimant->name}! Your claim for '{$report->item_name}' has been approved. Please visit the TIP OSA office to claim your item. - Claimio"
+                    : "Hi {$claimant->name}! Your claim for '{$report->item_name}' was not approved. You may contact the TIP OSA office for more info. - Claimio";
 
-                if ($claimant->phone_number) {
-                    $smsService->send($claimant->phone_number, $claimantMsg, $claimant->email);
-                }
-            }
-
-            // Notify the report owner (only on approval)
-            if ($newStatus === 'approved' && $reportOwner) {
-                $ownerMsg = "Claimio: A claim on your report \"{$report->item_name}\" has been approved. The item has been marked as claimed.";
-
-                if ($reportOwner->phone_number) {
-                    $smsService->send($reportOwner->phone_number, $ownerMsg, $reportOwner->email);
-                }
+                $smsService->send($claimant->phone_number, $message, $claimant->id);
             }
         } catch (\Exception $e) {
             // SMS failure should never block the claim action

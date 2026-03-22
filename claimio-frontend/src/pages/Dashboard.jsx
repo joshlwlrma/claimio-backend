@@ -25,6 +25,7 @@ const Dashboard = () => {
 
     const [activeTab, setActiveTab] = useState(initialTab);
     const [searchQuery, setSearchQuery] = useState(initialSearch);
+    const [campusFilter, setCampusFilter] = useState('');
     const [currentPage, setCurrentPage] = useState(initialPage);
 
     const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
@@ -62,6 +63,7 @@ const Dashboard = () => {
             const params = { page: currentPage };
             if (activeTab !== 'all') params.type = activeTab;
             if (debouncedSearch) params.q = debouncedSearch;
+            if (campusFilter) params.campus = campusFilter;
 
             const response = await api.get('/reports', { params });
 
@@ -81,7 +83,7 @@ const Dashboard = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, activeTab, debouncedSearch]);
+    }, [currentPage, activeTab, debouncedSearch, campusFilter]);
 
     // Fetch found/lost counts separately for stats
     useEffect(() => {
@@ -112,6 +114,11 @@ const Dashboard = () => {
         setCurrentPage(1);
     };
 
+    const handleCampusChange = (value) => {
+        setCampusFilter(value);
+        setCurrentPage(1);
+    };
+
     const handleNextPage = () => {
         if (meta && currentPage < meta.last_page) {
             setCurrentPage(prev => prev + 1);
@@ -128,6 +135,7 @@ const Dashboard = () => {
         setActiveTab('all');
         setSearchQuery('');
         setDebouncedSearch('');
+        setCampusFilter('');
         setCurrentPage(1);
     };
 
@@ -209,6 +217,18 @@ const Dashboard = () => {
                             className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-full text-sm text-text-dark focus:border-accent focus:outline-none transition-colors"
                         />
                     </div>
+
+                    {/* Campus filter */}
+                    <select
+                        value={campusFilter}
+                        onChange={(e) => handleCampusChange(e.target.value)}
+                        className="bg-white border border-gray-200 rounded-full px-5 py-3 text-sm text-text-dark focus:border-accent focus:outline-none transition-colors appearance-none cursor-pointer w-full md:w-auto"
+                    >
+                        <option value="">All Campuses</option>
+                        <option value="arlegui">Arlegui</option>
+                        <option value="casal">Casal</option>
+                        <option value="outside">Outside TIP</option>
+                    </select>
                 </div>
 
                 {/* Reports Grid */}

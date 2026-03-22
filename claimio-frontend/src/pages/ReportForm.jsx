@@ -12,6 +12,7 @@ const ReportForm = () => {
     const [itemName, setItemName] = useState('');
     const [description, setDescription] = useState('');
     const [location, setLocation] = useState('');
+    const [campus, setCampus] = useState('');
 
     // Image handling
     const [images, setImages] = useState([]);
@@ -56,6 +57,10 @@ const ReportForm = () => {
             setError('Please select whether you lost or found something.');
             return;
         }
+        if (!campus) {
+            setError('Please select a campus.');
+            return;
+        }
         setError('');
         setStep(2);
     };
@@ -70,6 +75,7 @@ const ReportForm = () => {
         formData.append('item_name', itemName);
         formData.append('description', description);
         formData.append('location', location);
+        formData.append('campus', campus);
 
         images.forEach((image, index) => {
             formData.append(`images[${index}]`, image);
@@ -213,6 +219,23 @@ const ReportForm = () => {
                             />
                         </div>
 
+                        {/* Campus */}
+                        <div>
+                            <label htmlFor="campus" className="block text-sm font-bold uppercase tracking-wider text-text-muted mb-2">Campus</label>
+                            <select
+                                id="campus"
+                                required
+                                value={campus}
+                                onChange={(e) => setCampus(e.target.value)}
+                                className="w-full bg-white border border-gray-200 rounded-xl py-3 px-4 text-text-dark focus:outline-none focus:border-accent transition-colors appearance-none cursor-pointer"
+                            >
+                                <option value="">Select campus...</option>
+                                <option value="arlegui">Arlegui Campus</option>
+                                <option value="casal">Casal Campus</option>
+                                <option value="outside">Outside TIP</option>
+                            </select>
+                        </div>
+
                         <button type="submit" className="btn-amber w-full py-3.5 text-center">
                             Continue to Images
                         </button>
@@ -281,6 +304,10 @@ const ReportForm = () => {
                                 <div className="flex justify-between">
                                     <span className="text-text-muted">Location:</span>
                                     <span className="text-white">{location}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-text-muted">Campus:</span>
+                                    <span className="text-white capitalize">{campus || '—'}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-text-muted">Images:</span>

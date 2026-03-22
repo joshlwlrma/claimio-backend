@@ -107,6 +107,11 @@ class AdminController extends Controller
                 });
             }
 
+            // Filter by campus
+            if ($request->has('campus') && $request->campus) {
+                $query->where('campus', $request->campus);
+            }
+
             // Period-based filtering
             if ($request->has('period') && $request->period && $request->period !== 'all') {
                 $now = \Carbon\Carbon::now();

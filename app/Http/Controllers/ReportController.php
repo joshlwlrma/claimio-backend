@@ -65,6 +65,11 @@ class ReportController extends Controller
             $query->where('item_name', 'LIKE', "%{$search}%");
         }
 
+        // Filter by campus
+        if ($request->filled('campus')) {
+            $query->where('campus', $request->input('campus'));
+        }
+
         // Order by newest first, paginate 15 per page
         $reports = $query->orderBy('created_at', 'desc')->paginate(15);
 
@@ -137,6 +142,7 @@ class ReportController extends Controller
                 'category' => $validated['category'] ?? 'other',
                 'description' => $validated['description'],
                 'location' => $validated['location'],
+                'campus' => $validated['campus'],
                 'date_occurrence' => $validated['date_occurrence'] ?? now()->toDateString(),
                 'contact_number' => $validated['contact_number'] ?? null,
                 'status' => 'pending',

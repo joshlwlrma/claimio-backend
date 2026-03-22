@@ -96,6 +96,11 @@ class MatchingService
             $score += (int) round(($descOverlap / $maxDescWords) * 20);
         }
 
+        // 4. Campus match bonus (+20)
+        if ($a->campus && $b->campus && $a->campus === $b->campus) {
+            $score += 20;
+        }
+
         // Category match alone is NOT enough - require at least some item name overlap
         if ($score >= 40 && !$hasNameOverlap) {
             return 0; // Skip this match entirely

@@ -24,6 +24,7 @@ class Report extends Model
         'category',
         'description',
         'location',
+        'campus',
         'date_occurrence',
         'contact_number',
         'status',

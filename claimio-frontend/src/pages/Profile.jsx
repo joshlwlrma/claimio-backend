@@ -121,17 +121,17 @@ const Profile = () => {
                 <div className="bg-white rounded-xl p-6 mb-8 border border-gray-200">
                     <div className="flex items-center gap-2 mb-3">
                         <Phone size={16} className="text-accent" />
-                        <h3 className="text-sm font-bold uppercase tracking-wider text-text-dark">Phone Number (Optional)</h3>
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-text-dark">Mobile Number for SMS Notifications</h3>
                     </div>
                     <p className="text-xs text-text-muted mb-4">
-                        Used only for SMS notifications when your claims are approved/rejected. Never shared publicly.
+                        Used only to notify you when your claim is resolved
                     </p>
                     <div className="flex gap-3">
                         <input
                             type="tel"
                             value={phoneNumber}
                             onChange={(e) => setPhoneNumber(e.target.value)}
-                            placeholder="09XX XXX XXXX"
+                            placeholder="09xxxxxxxxx"
                             className="flex-1 bg-page border border-gray-200 rounded-xl py-2.5 px-4 text-sm text-text-dark focus:outline-none focus:border-accent transition-colors"
                         />
                         <button

@@ -4,7 +4,7 @@ import api from '../services/api';
 import {
     BarChart3, Users, FileText, AlertTriangle, CheckCircle2, XCircle,
     Download, Search, ChevronLeft, ChevronRight, Loader2, Eye,
-    Clock, Shield, Trash2, Edit3, X, Link2, Calendar, MapPin
+    Clock, Shield, Trash2, Edit3, X, Link2, Calendar, MapPin, Building2
 } from 'lucide-react';
 
 const STATUS_COLORS = {
@@ -33,6 +33,7 @@ const AdminDashboard = () => {
     // Filters
     const [filterType, setFilterType] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
+    const [filterCampus, setFilterCampus] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -105,6 +106,7 @@ const AdminDashboard = () => {
             const params = { page };
             if (filterType) params.type = filterType;
             if (filterStatus) params.status = filterStatus;
+            if (filterCampus) params.campus = filterCampus;
             if (searchQuery.trim()) params.search = searchQuery.trim();
 
             const { data } = await api.get('/admin/reports', { params });
@@ -115,7 +117,7 @@ const AdminDashboard = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filterType, filterStatus, searchQuery]);
+    }, [filterType, filterStatus, filterCampus, searchQuery]);
 
     const fetchMatches = useCallback(async () => {
         try {
@@ -281,8 +283,8 @@ const AdminDashboard = () => {
                             key={tab}
                             onClick={() => setAdminTab(tab)}
                             className={`px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${adminTab === tab
-                                    ? 'bg-accent text-black'
-                                    : 'bg-card text-text-muted hover:text-white border border-border'
+                                ? 'bg-accent text-black'
+                                : 'bg-card text-text-muted hover:text-white border border-border'
                                 }`}
                         >
                             {tab}
@@ -315,6 +317,17 @@ const AdminDashboard = () => {
                                 <option value="matched">Matched</option>
                                 <option value="claimed">Claimed</option>
                                 <option value="returned">Returned</option>
+                            </select>
+
+                            <select
+                                value={filterCampus}
+                                onChange={e => setFilterCampus(e.target.value)}
+                                className="bg-card-alt border border-border rounded-lg px-4 py-2.5 text-sm text-white focus:border-accent focus:outline-none w-full md:w-auto appearance-none cursor-pointer"
+                            >
+                                <option value="">All Campuses</option>
+                                <option value="arlegui">Arlegui</option>
+                                <option value="casal">Casal</option>
+                                <option value="outside">Outside TIP</option>
                             </select>
 
                             <div className="relative flex-1 w-full">
@@ -358,7 +371,20 @@ const AdminDashboard = () => {
                                             onClick={() => setSelectedReport(report)}
                                         >
                                             <div className="col-span-1 text-text-muted font-mono">{report.id}</div>
-                                            <div className="col-span-3 font-semibold truncate text-white">{report.item_name}</div>
+                                            <div className="col-span-3 font-semibold truncate text-white flex items-center gap-2">
+                                            {report.item_name}
+                                            {(() => {
+                                                const pendingCount = report.claims?.filter(c => c.claim_status === 'pending').length || 0;
+                                                if (pendingCount > 0) {
+                                                    return (
+                                                        <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold text-white bg-red-500 rounded-full leading-none">
+                                                            {pendingCount}
+                                                        </span>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
+                                        </div>
                                             <div className="col-span-2">
                                                 <span className={`badge ${report.type === 'lost' ? 'badge-lost' : 'badge-found'}`}>
                                                     {report.type}
@@ -578,8 +604,8 @@ const AdminDashboard = () => {
                                             key={opt.value}
                                             onClick={() => setExportPeriod(opt.value)}
                                             className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${exportPeriod === opt.value
-                                                    ? 'bg-accent text-black'
-                                                    : 'bg-card-alt text-text-muted border border-border hover:text-white'
+                                                ? 'bg-accent text-black'
+                                                : 'bg-card-alt text-text-muted border border-border hover:text-white'
                                                 }`}
                                         >
                                             {opt.label}
@@ -782,8 +808,8 @@ const AdminDashboard = () => {
                                                 onClick={() => handleStatusChange(selectedReport.id, status)}
                                                 disabled={selectedReport.status === status}
                                                 className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors border ${selectedReport.status === status
-                                                        ? 'bg-accent/20 border-accent/50 text-accent cursor-default'
-                                                        : 'bg-card-alt border-border text-text-muted hover:text-white hover:border-gray-500'
+                                                    ? 'bg-accent/20 border-accent/50 text-accent cursor-default'
+                                                    : 'bg-card-alt border-border text-text-muted hover:text-white hover:border-gray-500'
                                                     }`}
                                             >
                                                 {status}

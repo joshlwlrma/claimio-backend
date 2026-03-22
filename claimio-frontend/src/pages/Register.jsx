@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { User, Mail, Lock } from 'lucide-react';
+import { User, Mail, Lock, ArrowLeft } from 'lucide-react';
 import registerBg from '../assets/register bg.webp';
 import { ShieldCheck } from 'lucide-react';
 
@@ -14,6 +14,14 @@ const Register = () => {
             className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: `url("${registerBg}")` }}
         >
+            {/* Back to Home */}
+            <Link
+                to="/"
+                className="absolute top-6 left-6 z-20 flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors font-medium"
+            >
+                <ArrowLeft size={16} />
+                Back to Home
+            </Link>
             {/* Scattered decorative shapes */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-20 right-20 w-20 h-20 bg-accent/10 rounded-xl -rotate-12" />

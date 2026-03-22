@@ -31,6 +31,7 @@ class StoreReportRequest extends FormRequest
             'category' => 'nullable|string|max:100',
             'description' => 'required|string|max:2000',
             'location' => 'required|string|max:255',
+            'campus' => 'required|in:arlegui,casal,outside',
             'date_occurrence' => 'nullable|date|before_or_equal:today',
             'contact_number' => 'nullable|string|max:20',
             'images' => 'nullable|array|max:5',
@@ -49,6 +50,7 @@ class StoreReportRequest extends FormRequest
             'category' => 'category',
             'description' => 'description',
             'location' => 'location',
+            'campus' => 'campus',
             'date_occurrence' => 'date of occurrence',
             'contact_number' => 'contact number',
             'images' => 'images',
@@ -63,6 +65,8 @@ class StoreReportRequest extends FormRequest
     {
         return [
             'type.in' => 'Report type must be either "lost" or "found".',
+            'campus.required' => 'Please select a campus.',
+            'campus.in' => 'Campus must be Arlegui, Casal, or Outside TIP.',
             'date_occurrence.before_or_equal' => 'Date of occurrence cannot be in the future.',
             'images.max' => 'You may upload a maximum of 5 images.',
             'images.*.mimes' => 'Each image must be a JPG, JPEG, or PNG file.',

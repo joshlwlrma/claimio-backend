@@ -16,6 +16,7 @@ class FullReportResource extends JsonResource
             'category' => $this->category,
             'description' => $this->description,
             'location' => $this->location,
+            'campus' => $this->campus,
             'contact_number' => $this->contact_number,
             'status' => $this->status,
             'date_occurrence' => $this->date_occurrence,

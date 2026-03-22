@@ -64,7 +64,10 @@ class ProfileController extends Controller
     public function updateProfile(Request $request): JsonResponse
     {
         $request->validate([
-            'phone_number' => 'nullable|string|max:20',
+            'phone_number' => 'nullable|string|regex:/^09\d{9}$/|size:11',
+        ], [
+            'phone_number.regex' => 'Phone number must start with 09 and be exactly 11 digits.',
+            'phone_number.size' => 'Phone number must be exactly 11 digits.',
         ]);
 
         $user = $request->user();
