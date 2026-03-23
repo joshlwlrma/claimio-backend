@@ -225,7 +225,7 @@ const ReportDetail = () => {
                             )}
 
                             {/* Owner Delete Button */}
-                            {isOwner && (
+                            {isOwner && (report.status === 'pending' || report.status === 'expired') && (
                                 <div className="mt-8 pt-6 border-t border-border flex justify-end">
                                     <button 
                                         onClick={async () => {
@@ -383,16 +383,27 @@ const ReportDetail = () => {
                         </div>
 
                         {/* Claims list (owner only) */}
-                        {isOwner && claims.length > 0 && (
+                        {isOwner && claims.filter(c => c.claim_status === 'approved').length > 0 && (
                             <div className="bg-card rounded-2xl p-6 border border-border">
                                 <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted mb-4">
-                                    Pending Claims ({claims.length})
+                                    Claim Status
                                 </h3>
                                 <div className="space-y-3">
-                                    {claims.map((claim, idx) => (
+                                    {claims.filter(c => c.claim_status === 'approved').map((claim, idx) => (
                                         <div key={idx} className="bg-card-alt p-4 rounded-xl text-sm text-text-muted">
-                                            <strong className="text-white block mb-1">Claimant #{claim.user_id}</strong>
-                                            {claim.proof_description}
+                                            <strong className="text-white block mb-1">{claim.user?.name}</strong>
+                                            {claim.direction === 'finder_reporting_found' && (
+                                                <div className="mt-2">
+                                                    <span className="text-xs font-bold uppercase tracking-widest text-text-muted block mb-1">Finder Message</span>
+                                                    <span>{claim.finder_message}</span>
+                                                </div>
+                                            )}
+                                            {claim.direction === 'owner_claiming_found' && (
+                                                <div className="mt-2">
+                                                    <span className="text-xs font-bold uppercase tracking-widest text-text-muted block mb-1">Proof Description</span>
+                                                    <span>{claim.proof_description}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
