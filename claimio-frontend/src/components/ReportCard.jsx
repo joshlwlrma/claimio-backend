@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Calendar, ChevronRight, Search, Clock, Lock } from 'lucide-react';
+import { motion } from 'motion/react';
 
 const ReportCard = ({ report }) => {
 
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isLost = report.type === 'lost';
 
     const formattedDate = report.created_at
@@ -15,7 +17,11 @@ const ReportCard = ({ report }) => {
         : '';
 
     return (
-        <div className="bg-white rounded-xl overflow-hidden hover:shadow-xl transition-shadow flex flex-col h-full group border border-gray-100">
+        <motion.div
+            whileHover={prefersReduced ? {} : { scale: 1.02, y: -4 }}
+            transition={prefersReduced ? {} : { duration: 0.2 }}
+            className="bg-white rounded-xl overflow-hidden hover:shadow-xl transition-shadow flex flex-col h-full group border border-gray-100"
+        >
 
             {/* Image / Thumbnail */}
             <div className="h-48 w-full bg-card relative flex items-center justify-center overflow-hidden">
@@ -89,7 +95,7 @@ const ReportCard = ({ report }) => {
                 <ChevronRight size={16} className="transform group-hover:translate-x-1 transition-transform" />
             </Link>
 
-        </div>
+        </motion.div>
     );
 };
 

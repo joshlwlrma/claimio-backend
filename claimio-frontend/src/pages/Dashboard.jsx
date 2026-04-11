@@ -5,6 +5,7 @@ import ReportCard from '../components/ReportCard';
 import api from '../services/api';
 import { Search, Filter, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -32,6 +33,7 @@ const Dashboard = () => {
 
     // Stats
     const [statsData, setStatsData] = useState({ total: 0, found: 0, lost: 0 });
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -157,51 +159,58 @@ const Dashboard = () => {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                    <div className="bg-card rounded-xl p-6 border border-border">
+                    <motion.div 
+                        initial={prefersReduced ? {} : { opacity: 0 }}
+                        animate={prefersReduced ? {} : { opacity: 1 }}
+                        transition={{ duration: 0.4 }}
+                        className="bg-card rounded-xl p-6 border border-border">
                         <h3 className="text-text-muted text-xs uppercase tracking-widest font-bold mb-2">Total Active Reports</h3>
                         <p className="text-3xl font-bold text-white">{meta?.total || statsData.total}</p>
-                    </div>
-                    <div className="bg-card rounded-xl p-6 border border-border">
+                    </motion.div>
+                    <motion.div 
+                        initial={prefersReduced ? {} : { opacity: 0 }}
+                        animate={prefersReduced ? {} : { opacity: 1 }}
+                        transition={{ duration: 0.4, delay: 0.1 }}
+                        className="bg-card rounded-xl p-6 border border-border">
                         <h3 className="text-text-muted text-xs uppercase tracking-widest font-bold mb-2">Items Found</h3>
                         <p className="text-3xl font-bold text-emerald-400">{statsData.found}</p>
-                    </div>
-                    <div className="bg-card rounded-xl p-6 border border-border">
+                    </motion.div>
+                    <motion.div 
+                        initial={prefersReduced ? {} : { opacity: 0 }}
+                        animate={prefersReduced ? {} : { opacity: 1 }}
+                        transition={{ duration: 0.4, delay: 0.2 }}
+                        className="bg-card rounded-xl p-6 border border-border">
                         <h3 className="text-text-muted text-xs uppercase tracking-widest font-bold mb-2">Items Lost</h3>
                         <p className="text-3xl font-bold text-red-400">{statsData.lost}</p>
-                    </div>
+                    </motion.div>
                 </div>
 
                 {/* Filter Tabs + Search */}
                 <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                     {/* Tabs */}
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => handleTabChange('all')}
-                            className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${activeTab === 'all'
-                                    ? 'bg-accent text-black'
-                                    : 'text-text-muted hover:text-text-dark'
-                                }`}
-                        >
-                            All Items
-                        </button>
-                        <button
-                            onClick={() => handleTabChange('found')}
-                            className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${activeTab === 'found'
-                                    ? 'bg-accent text-black'
-                                    : 'text-text-muted hover:text-text-dark'
-                                }`}
-                        >
-                            Found
-                        </button>
-                        <button
-                            onClick={() => handleTabChange('lost')}
-                            className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider transition-colors ${activeTab === 'lost'
-                                    ? 'bg-accent text-black'
-                                    : 'text-text-muted hover:text-text-dark'
-                                }`}
-                        >
-                            Lost
-                        </button>
+                    <div className="flex gap-2 relative z-0">
+                        {['all', 'found', 'lost'].map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => handleTabChange(tab)}
+                                className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider relative transition-colors ${activeTab === tab
+                                        ? 'text-black'
+                                        : 'text-text-muted hover:text-text-dark'
+                                    }`}
+                            >
+                                {activeTab === tab && !prefersReduced && (
+                                    <motion.div
+                                        layoutId="dashboardTabIndicator"
+                                        className="absolute inset-0 bg-accent rounded-full -z-10"
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    />
+                                )}
+                                {activeTab === tab && prefersReduced && (
+                                    <div className="absolute inset-0 bg-accent rounded-full -z-10" />
+                                )}
+                                {tab === 'all' ? 'All Items' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                            </button>
+                        ))}
                     </div>
 
                     {/* Search bar */}
@@ -266,8 +275,15 @@ const Dashboard = () => {
                 ) : (
                     <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {reports.map(report => (
-                                <ReportCard key={report.id} report={report} />
+                            {reports.map((report, index) => (
+                                <motion.div
+                                    key={report.id}
+                                    initial={prefersReduced ? {} : { opacity: 0, y: 20 }}
+                                    animate={prefersReduced ? {} : { opacity: 1, y: 0 }}
+                                    transition={prefersReduced ? {} : { delay: index * 0.05, duration: 0.4 }}
+                                >
+                                    <ReportCard report={report} />
+                                </motion.div>
                             ))}
                         </div>
 

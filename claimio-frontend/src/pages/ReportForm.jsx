@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import UserBar from '../components/UserBar';
 import api from '../services/api';
 import { Upload, X, Loader2, ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 const ReportForm = () => {
     const navigate = useNavigate();
@@ -26,6 +27,7 @@ const ReportForm = () => {
 
     // Step tracking
     const [step, setStep] = useState(1);
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const handleImageChange = (e) => {
         const files = Array.from(e.target.files);
@@ -148,9 +150,19 @@ const ReportForm = () => {
                     </div>
                 )}
 
+                {/* Steps Forms */}
+                <AnimatePresence mode="wait">
                 {/* STEP 1: Details */}
                 {step === 1 && (
-                    <form onSubmit={handleStep1Submit} className="space-y-6">
+                    <motion.form
+                        key="step1"
+                        initial={prefersReduced ? {} : { opacity: 0, x: 20 }}
+                        animate={prefersReduced ? {} : { opacity: 1, x: 0 }}
+                        exit={prefersReduced ? {} : { opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3 }}
+                        onSubmit={handleStep1Submit} 
+                        className="space-y-6"
+                    >
 
                         {/* Type Selection */}
                         <div>
@@ -279,15 +291,27 @@ const ReportForm = () => {
                             )}
                         </div>
 
-                        <button type="submit" className="btn-amber w-full py-3.5 text-center">
+                        <motion.button 
+                            whileHover={prefersReduced ? {} : { scale: 1.02 }}
+                            transition={{ duration: 0.2 }}
+                            type="submit" 
+                            className="btn-amber w-full py-3.5 text-center">
                             Continue to Images
-                        </button>
-                    </form>
+                        </motion.button>
+                    </motion.form>
                 )}
 
                 {/* STEP 2: Images */}
                 {step === 2 && (
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <motion.form
+                        key="step2"
+                        initial={prefersReduced ? {} : { opacity: 0, x: 20 }}
+                        animate={prefersReduced ? {} : { opacity: 1, x: 0 }}
+                        exit={prefersReduced ? {} : { opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3 }}
+                        onSubmit={handleSubmit} 
+                        className="space-y-6"
+                    >
 
                         <div>
                             <label className="block text-sm font-bold uppercase tracking-wider text-text-muted mb-3">Images (Optional, Max 5)</label>
@@ -359,7 +383,9 @@ const ReportForm = () => {
                             </div>
                         </div>
 
-                        <button
+                        <motion.button
+                            whileHover={prefersReduced || isSubmitting ? {} : { scale: 1.02 }}
+                            transition={{ duration: 0.2 }}
                             type="submit"
                             disabled={isSubmitting}
                             className="btn-amber w-full py-3.5 text-center flex items-center justify-center"
@@ -372,9 +398,10 @@ const ReportForm = () => {
                             ) : (
                                 `Submit ${type === 'lost' ? 'Lost' : 'Found'} Report`
                             )}
-                        </button>
-                    </form>
+                        </motion.button>
+                    </motion.form>
                 )}
+                </AnimatePresence>
             </main>
         </div>
     );

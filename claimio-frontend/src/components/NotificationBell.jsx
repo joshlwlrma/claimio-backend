@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, CheckCircle2, XCircle, Link as LinkIcon, Clock } from 'lucide-react';
 import api from '../services/api';
+import { motion, AnimatePresence } from 'motion/react';
 
 const NotificationBell = () => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const fetchNotifications = async () => {
         try {
@@ -96,14 +98,23 @@ const NotificationBell = () => {
             >
                 <Bell size={20} />
                 {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 flex items-center justify-center w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full border border-background">
+                    <motion.span 
+                        animate={prefersReduced ? {} : { scale: [1, 1.1, 1] }}
+                        transition={prefersReduced ? {} : { repeat: Infinity, duration: 2 }}
+                        className="absolute top-1 right-1 flex items-center justify-center w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full border border-background">
                         {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
+                    </motion.span>
                 )}
             </button>
 
+            <AnimatePresence>
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-card border border-border shadow-2xl rounded-xl overflow-hidden z-50">
+                <motion.div 
+                    initial={prefersReduced ? {} : { opacity: 0, scale: 0.95, y: -10 }}
+                    animate={prefersReduced ? {} : { opacity: 1, scale: 1, y: 0 }}
+                    exit={prefersReduced ? {} : { opacity: 0, scale: 0.95, y: -10 }}
+                    className="absolute right-0 mt-2 w-80 bg-card border border-border shadow-2xl rounded-xl origin-top-right overflow-hidden z-50"
+                >
                     <div className="px-4 py-3 border-b border-border bg-card-alt flex justify-between items-center">
                         <h3 className="font-bold text-white uppercase tracking-wider text-xs">Notifications</h3>
                         {unreadCount > 0 && (
@@ -121,8 +132,11 @@ const NotificationBell = () => {
                             </div>
                         ) : (
                             <div className="divide-y divide-border/50">
-                                {notifications.slice(0, 5).map(notification => (
-                                    <div 
+                                {notifications.slice(0, 5).map((notification, idx) => (
+                                    <motion.div
+                                        initial={prefersReduced ? {} : { opacity: 0, x: 20 }}
+                                        animate={prefersReduced ? {} : { opacity: 1, x: 0 }}
+                                        transition={prefersReduced ? {} : { delay: idx * 0.05, duration: 0.3 }}
                                         key={notification.id}
                                         onClick={() => !notification.read_at && markAsRead(notification.id)}
                                         className={`p-4 hover:bg-card-alt transition-colors cursor-pointer flex gap-3
@@ -143,7 +157,7 @@ const NotificationBell = () => {
                                         {!notification.read_at && (
                                             <div className="w-2 h-2 rounded-full bg-accent shrink-0 mt-1.5 shadow-[0_0_8px_rgba(var(--accent),0.8)]"></div>
                                         )}
-                                    </div>
+                                    </motion.div>
                                 ))}
                             </div>
                         )}
@@ -159,8 +173,9 @@ const NotificationBell = () => {
                             </button>
                         </div>
                     )}
-                </div>
+                </motion.div>
             )}
+            </AnimatePresence>
         </div>
     );
 };

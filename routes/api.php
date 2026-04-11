@@ -79,6 +79,14 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::put('/reports/{report}/restore', [AdminController::class, 'restoreReport'])
         ->name('admin.reports.restore');
 
+    // Archive Report (soft delete)
+    Route::put('/reports/{report}/archive', [AdminController::class, 'archiveReport'])
+        ->name('admin.reports.archive');
+
+    // Restore Archived Report
+    Route::put('/reports/{report}/restore-archived', [AdminController::class, 'restoreArchivedReport'])
+        ->name('admin.reports.restore-archived');
+
     // CSV export
     Route::get('/reports/export', [AdminController::class , 'export'])->name('admin.reports.export');
 

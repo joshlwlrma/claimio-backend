@@ -1,10 +1,21 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { User, Mail, Lock, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { User, ArrowLeft, AlertCircle } from 'lucide-react';
 import registerBg from '../assets/register bg.webp';
 import { ShieldCheck } from 'lucide-react';
 
 const Register = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [domainError, setDomainError] = useState(false);
+
+    useEffect(() => {
+        if (searchParams.get('error') === 'invalid_domain') {
+            setDomainError(true);
+            searchParams.delete('error');
+            setSearchParams(searchParams, { replace: true });
+        }
+    }, []);
+
     const handleGoogleLogin = () => {
         window.location.href = 'http://localhost:8000/api/auth/google/redirect';
     };
@@ -17,7 +28,7 @@ const Register = () => {
             {/* Back to Home */}
             <Link
                 to="/"
-                className="absolute top-6 left-6 z-20 flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors font-medium"
+                className="absolute top-6 left-6 z-20 flex items-center gap-2 text-sm text-white/90 bg-black/20 hover:bg-black/40 px-4 py-2 rounded-full backdrop-blur-md hover:text-white transition-all font-medium drop-shadow-md border border-white/10"
             >
                 <ArrowLeft size={16} />
                 Back to Home
@@ -59,6 +70,16 @@ const Register = () => {
                     <p className="text-sm text-text-muted mb-8 text-center max-w-xs leading-relaxed">
                         Sign up with your TIP Google account to start reporting lost or found items on campus.
                     </p>
+
+                    {/* Domain Error Alert */}
+                    {domainError && (
+                        <div className="w-full max-w-xs mb-6 flex items-start gap-3 bg-red-500/10 border border-red-500/30 text-red-600 px-4 py-3 rounded-xl text-sm">
+                            <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                            <span className="font-medium leading-snug">
+                                Access Denied: Only <strong>@tip.edu.ph</strong> accounts are allowed to access Claimio.
+                            </span>
+                        </div>
+                    )}
 
                     {/* Google G Button */}
                     <button

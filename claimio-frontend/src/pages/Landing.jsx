@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { ChevronDown, ChevronUp, Github, Mail, Phone } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 import alexxImg from '../assets/alexx.webp';
 import ashhImg from '../assets/ashh.webp';
@@ -158,11 +159,21 @@ const Landing = () => {
                                         <ChevronDown size={20} className="text-text-muted shrink-0" />
                                     )}
                                 </button>
-                                {openFaq === index && (
-                                    <div className="px-6 pb-6 text-text-muted text-sm leading-relaxed border-t border-border pt-4">
-                                        {item.a}
-                                    </div>
-                                )}
+                                <AnimatePresence initial={false}>
+                                    {openFaq === index && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: "auto", opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="px-6 pb-6 text-text-muted text-sm leading-relaxed border-t border-border pt-4">
+                                                {item.a}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         ))}
                     </div>

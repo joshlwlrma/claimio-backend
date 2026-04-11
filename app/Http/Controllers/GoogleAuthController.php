@@ -56,10 +56,8 @@ class GoogleAuthController extends Controller
         $emailDomain = substr(strrchr($googleUser->getEmail(), '@'), 1);
 
         if (strtolower($emailDomain) !== strtolower($allowedDomain)) {
-            return response()->json([
-                'error' => 'Unauthorized email domain.',
-                'message' => "Only @{$allowedDomain} email addresses are allowed to sign in.",
-            ], 403);
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+            return redirect($frontendUrl . '/login?error=invalid_domain');
         }
 
         // Step 3: Find existing user by google_id, or by email, or create new

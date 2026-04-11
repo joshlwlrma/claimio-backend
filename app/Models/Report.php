@@ -32,6 +32,7 @@ class Report extends Model
         'is_sensitive',
         'name_on_item',
         'expires_at',
+        'archived_at',
     ];
 
     protected function casts(): array
@@ -40,8 +41,33 @@ class Report extends Model
             'date_occurrence' => 'date',
             'resolved_at' => 'datetime',
             'expires_at' => 'datetime',
+            'archived_at' => 'datetime',
             'is_sensitive' => 'boolean',
         ];
+    }
+
+    // ──────────────────────────────────────────────
+    // Scopes
+    // ──────────────────────────────────────────────
+
+    /**
+     * Scope to only include non-archived reports.
+     */
+    public function scopeActive($query)
+    {
+        return $query->whereNull('archived_at');
+    }
+
+    // ──────────────────────────────────────────────
+    // Accessors
+    // ──────────────────────────────────────────────
+
+    /**
+     * Check if the report is archived.
+     */
+    public function getIsArchivedAttribute(): bool
+    {
+        return !is_null($this->archived_at);
     }
 
     // ──────────────────────────────────────────────

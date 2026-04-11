@@ -42,7 +42,8 @@ class ReportController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Report::with(['user:id,name,email', 'images']);
+        $query = Report::with(['user:id,name,email', 'images'])
+            ->active(); // Exclude archived reports
 
         // Exclude expired reports from public listing
         $query->where('status', '!=', 'expired');
@@ -100,6 +101,14 @@ class ReportController extends Controller
 
         $isOwner = $user && $user->id === $report->user_id;
         $isAdmin = $user && $user->role === 'admin';
+
+        // Block access to archived reports unless requester is owner or admin
+        if ($report->is_archived && !$isOwner && !$isAdmin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This report is no longer available.',
+            ], 404);
+        }
 
         if ($isOwner || $isAdmin) {
             $report->load(['images', 'user:id,name,email', 'claims.user:id,name,email']);

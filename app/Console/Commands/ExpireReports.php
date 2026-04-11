@@ -29,6 +29,7 @@ class ExpireReports extends Command
     {
         $expiredReports = Report::where('expires_at', '<=', now())
             ->whereNotIn('status', ['expired', 'returned', 'claimed'])
+            ->whereNull('archived_at')
             ->get();
 
         $count = $expiredReports->count();

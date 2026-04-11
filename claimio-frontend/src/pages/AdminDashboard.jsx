@@ -5,8 +5,9 @@ import {
     BarChart3, Users, FileText, AlertTriangle, CheckCircle2, XCircle,
     Download, Search, ChevronLeft, ChevronRight, Loader2, Eye,
     Clock, Shield, Trash2, Edit3, X, Link2, Calendar, MapPin, Building2,
-    FileSearch
+    FileSearch, Archive, ArchiveRestore
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 const STATUS_COLORS = {
     pending: 'bg-amber-500/20 text-amber-500 border border-amber-500/30 font-bold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider',
@@ -14,6 +15,7 @@ const STATUS_COLORS = {
     claimed: 'bg-orange-500/20 text-orange-400 border border-orange-500/30 font-bold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider',
     returned: 'bg-gray-500/20 text-gray-400 border border-gray-500/30 font-bold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider',
     expired: 'bg-gray-800 text-gray-400 border border-gray-700 font-bold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider',
+    archived: 'bg-purple-500/20 text-purple-400 border border-purple-500/30 font-bold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider',
 };
 
 const CLAIM_COLORS = {
@@ -36,6 +38,7 @@ const AdminDashboard = () => {
     const [filterType, setFilterType] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
     const [filterCampus, setFilterCampus] = useState('');
+    const [filterArchived, setFilterArchived] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -70,6 +73,7 @@ const AdminDashboard = () => {
     
     // expand tracking
     const [expandedProofs, setExpandedProofs] = useState({});
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     // ── Data Fetching ───────────────────────────────
 
@@ -117,6 +121,9 @@ const AdminDashboard = () => {
         try {
             setIsLoading(true);
             const params = { page };
+            if (filterArchived) {
+                params.filter = 'archived';
+            }
             if (filterType) params.type = filterType;
             if (filterStatus) params.status = filterStatus;
             if (filterCampus) params.campus = filterCampus;
@@ -130,7 +137,7 @@ const AdminDashboard = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filterType, filterStatus, filterCampus, searchQuery]);
+    }, [filterType, filterStatus, filterCampus, filterArchived, searchQuery]);
 
     const fetchMatches = useCallback(async () => {
         try {
@@ -297,6 +304,35 @@ const AdminDashboard = () => {
         }
     };
 
+    const handleArchiveReport = async (reportId) => {
+        if (!window.confirm('Archive this report? It will be hidden from the dashboard but safely stored.')) return;
+        try {
+            await api.put(`/admin/reports/${reportId}/archive`);
+            showMessage(`Report #${reportId} archived.`);
+            fetchReports(currentPage);
+            fetchStats();
+            if (selectedReport?.id === reportId) {
+                setSelectedReport(null);
+            }
+        } catch (err) {
+            showMessage(err.response?.data?.message || 'Failed to archive report.');
+        }
+    };
+
+    const handleRestoreArchivedReport = async (reportId) => {
+        try {
+            await api.put(`/admin/reports/${reportId}/restore-archived`);
+            showMessage(`Report #${reportId} restored from archive.`);
+            fetchReports(currentPage);
+            fetchStats();
+            if (selectedReport?.id === reportId) {
+                setSelectedReport(null);
+            }
+        } catch (err) {
+            showMessage(err.response?.data?.message || 'Failed to restore archived report.');
+        }
+    };
+
     const toggleProof = (id) => {
         setExpandedProofs(prev => ({ ...prev, [id]: !prev[id] }));
     };
@@ -333,14 +369,14 @@ const AdminDashboard = () => {
                     </div>
                 ) : stats && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                        <StatCard label="Total Reports" value={stats.reports.total} color="text-white" />
-                        <StatCard label="Lost Items" value={stats.reports.by_type.lost} color="text-red-400" />
-                        <StatCard label="Found Items" value={stats.reports.by_type.found} color="text-emerald-400" />
-                        <StatCard label="Total Users" value={stats.users.total} color="text-white" />
-                        <StatCard label="Pending Reports" value={stats.reports.by_status.pending} color="text-accent" />
-                        <StatCard label="Matched" value={stats.reports.by_status.matched} color="text-blue-400" />
-                        <StatCard label="Claimed" value={stats.reports.by_status.claimed} color="text-emerald-400" />
-                        <StatCard label="Pending Claims" value={stats.claims.by_status.pending} color="text-accent" />
+                        <StatCard delay={0.05} label="Total Reports" value={stats.reports.total} color="text-white" />
+                        <StatCard delay={0.10} label="Lost Items" value={stats.reports.by_type.lost} color="text-red-400" />
+                        <StatCard delay={0.15} label="Found Items" value={stats.reports.by_type.found} color="text-emerald-400" />
+                        <StatCard delay={0.20} label="Total Users" value={stats.users.total} color="text-white" />
+                        <StatCard delay={0.25} label="Pending Reports" value={stats.reports.by_status.pending} color="text-accent" />
+                        <StatCard delay={0.30} label="Matched" value={stats.reports.by_status.matched} color="text-blue-400" />
+                        <StatCard delay={0.35} label="Claimed" value={stats.reports.by_status.claimed} color="text-emerald-400" />
+                        <StatCard delay={0.40} label="Pending Claims" value={stats.claims.by_status.pending} color="text-accent" />
                     </div>
                 )}
 
@@ -360,6 +396,14 @@ const AdminDashboard = () => {
                     ))}
                 </div>
 
+                <AnimatePresence mode="wait">
+                <motion.div
+                    key={adminTab}
+                    initial={prefersReduced ? {} : { opacity: 0 }}
+                    animate={prefersReduced ? {} : { opacity: 1 }}
+                    exit={prefersReduced ? {} : { opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                >
                 {/* ════════ REPORTS TAB ════════ */}
                 {adminTab === 'reports' && (
                     <>
@@ -398,6 +442,18 @@ const AdminDashboard = () => {
                                 <option value="casal">Casal</option>
                                 <option value="outside">Outside TIP</option>
                             </select>
+
+                            <button
+                                onClick={() => setFilterArchived(prev => !prev)}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors whitespace-nowrap ${
+                                    filterArchived
+                                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40'
+                                        : 'bg-card-alt border border-border text-text-muted hover:text-white'
+                                }`}
+                            >
+                                <Archive size={14} />
+                                {filterArchived ? 'Archived' : 'Archived'}
+                            </button>
 
                             <div className="relative flex-1 w-full">
                                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
@@ -475,6 +531,23 @@ const AdminDashboard = () => {
                                                 >
                                                     <Eye size={16} />
                                                 </button>
+                                                {report.is_archived ? (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleRestoreArchivedReport(report.id); }}
+                                                        className="p-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors text-text-muted hover:text-emerald-400"
+                                                        title="Restore from Archive"
+                                                    >
+                                                        <ArchiveRestore size={16} />
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleArchiveReport(report.id); }}
+                                                        className="p-1.5 rounded-lg hover:bg-purple-500/20 transition-colors text-text-muted hover:text-purple-400"
+                                                        title="Archive Report"
+                                                    >
+                                                        <Archive size={16} />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -491,14 +564,14 @@ const AdminDashboard = () => {
                                         <button
                                             disabled={meta.current_page <= 1}
                                             onClick={() => handlePageChange(meta.current_page - 1)}
-                                            className="p-2 rounded-lg border border-border hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                            className="p-2 rounded-lg border border-border text-text-muted hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                         >
                                             <ChevronLeft size={16} />
                                         </button>
                                         <button
                                             disabled={meta.current_page >= meta.last_page}
                                             onClick={() => handlePageChange(meta.current_page + 1)}
-                                            className="p-2 rounded-lg border border-border hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                            className="p-2 rounded-lg border border-border text-text-muted hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                         >
                                             <ChevronRight size={16} />
                                         </button>
@@ -939,14 +1012,14 @@ const AdminDashboard = () => {
                                         <button
                                             disabled={historyClaimsMeta.current_page <= 1}
                                             onClick={() => setClaimPage(prev => prev - 1)}
-                                            className="p-2 rounded-lg border border-border hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                            className="p-2 rounded-lg border border-border text-text-muted hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                         >
                                             <ChevronLeft size={16} />
                                         </button>
                                         <button
                                             disabled={historyClaimsMeta.current_page >= historyClaimsMeta.last_page}
                                             onClick={() => setClaimPage(prev => prev + 1)}
-                                            className="p-2 rounded-lg border border-border hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                            className="p-2 rounded-lg border border-border text-text-muted hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                         >
                                             <ChevronRight size={16} />
                                         </button>
@@ -956,11 +1029,25 @@ const AdminDashboard = () => {
                         </div>
                     </>
                 )}
+                </motion.div>
+                </AnimatePresence>
 
                 {/* ════════ REPORT DETAIL MODAL ════════ */}
+                <AnimatePresence>
                 {selectedReport && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                        <div className="bg-card border border-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-end p-4 bg-black/60 backdrop-blur-sm"
+                    >
+                        <motion.div 
+                            initial={prefersReduced ? {} : { opacity: 0, x: 40 }}
+                            animate={prefersReduced ? {} : { opacity: 1, x: 0 }}
+                            exit={prefersReduced ? {} : { opacity: 0, x: 40 }}
+                            transition={{ duration: 0.3 }}
+                            className="bg-card border-l border-border h-full w-full max-w-2xl overflow-y-auto shadow-2xl absolute right-0"
+                        >
                             {/* Modal Header */}
                             <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between z-10">
                                 <div className="flex items-center gap-3">
@@ -1057,6 +1144,23 @@ const AdminDashboard = () => {
                                                 Restore Report
                                             </button>
                                         )}
+                                        {selectedReport.is_archived ? (
+                                            <button
+                                                onClick={() => handleRestoreArchivedReport(selectedReport.id)}
+                                                className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-lg shadow-purple-600/20 flex items-center gap-2"
+                                            >
+                                                <ArchiveRestore size={16} />
+                                                Restore from Archive
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleArchiveReport(selectedReport.id)}
+                                                className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 border border-purple-500/30"
+                                            >
+                                                <Archive size={16} />
+                                                Archive
+                                            </button>
+                                        )}
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {['pending', 'matched', 'claimed', 'returned'].map(status => (
@@ -1138,9 +1242,10 @@ const AdminDashboard = () => {
                                     )}
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        </motion.div>
+                    </motion.div>
                 )}
+                </AnimatePresence>
 
             </main>
         </div>
@@ -1149,11 +1254,19 @@ const AdminDashboard = () => {
 
 // ── Sub-Components ──────────────────────────────────
 
-const StatCard = ({ label, value, color }) => (
-    <div className="bg-card border border-border rounded-xl p-5">
-        <h3 className="text-text-muted text-xs uppercase tracking-widest font-bold mb-2">{label}</h3>
-        <p className={`text-3xl font-bold ${color}`}>{value ?? '—'}</p>
-    </div>
-);
+const StatCard = ({ label, value, color, delay = 0 }) => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return (
+        <motion.div 
+            initial={prefersReduced ? {} : { opacity: 0, y: 20 }}
+            animate={prefersReduced ? {} : { opacity: 1, y: 0 }}
+            transition={prefersReduced ? {} : { delay, duration: 0.4 }}
+            className="bg-card border border-border rounded-xl p-5"
+        >
+            <h3 className="text-text-muted text-xs uppercase tracking-widest font-bold mb-2">{label}</h3>
+            <p className={`text-3xl font-bold ${color}`}>{value ?? '—'}</p>
+        </motion.div>
+    );
+};
 
 export default AdminDashboard;

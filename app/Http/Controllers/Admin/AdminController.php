@@ -82,6 +82,13 @@ class AdminController extends Controller
             $query = Report::with(['user', 'images', 'claims.user'])
                 ->orderBy('created_at', 'desc');
 
+            // Handle archived filter — separate from regular status filters
+            if ($request->input('filter') === 'archived') {
+                $query->whereNotNull('archived_at');
+            } else {
+                $query->whereNull('archived_at');
+            }
+
             // Filter by status if provided
             if ($request->has('status') && $request->status) {
                 $query->where('status', $request->status);
@@ -428,6 +435,67 @@ class AdminController extends Controller
         } catch (\Exception $e) {
             Log::error('Admin restore report error: ' . $e->getMessage());
             return response()->json(['message' => 'Failed to restore report'], 500);
+        }
+    }
+
+    /**
+     * Archive a report (admin only)
+     * Sets archived_at = now(), hides from public queries.
+     * Does NOT auto-reject pending claims.
+     */
+    public function archiveReport(Request $request, Report $report)
+    {
+        try {
+            if ($report->is_archived) {
+                return response()->json(['message' => 'This report is already archived'], 422);
+            }
+
+            $report->archived_at = now();
+            $report->save();
+
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action_type' => 'report_archived',
+                'description' => "Report #{$report->id} '{$report->item_name}' archived by admin",
+            ]);
+
+            return response()->json([
+                'message' => 'Report archived successfully',
+                'report' => new FullReportResource($report->load(['user', 'images', 'claims.user'])),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Admin archive report error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to archive report'], 500);
+        }
+    }
+
+    /**
+     * Restore an archived report (admin only)
+     * Sets archived_at = null, makes report visible again.
+     */
+    public function restoreArchivedReport(Request $request, Report $report)
+    {
+        try {
+            if (!$report->is_archived) {
+                return response()->json(['message' => 'This report is not archived'], 422);
+            }
+
+            $report->archived_at = null;
+            $report->save();
+
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action_type' => 'report_unarchived',
+                'description' => "Report #{$report->id} '{$report->item_name}' restored from archive by admin",
+            ]);
+
+            return response()->json([
+                'message' => 'Report restored from archive successfully',
+                'report' => new FullReportResource($report->load(['user', 'images', 'claims.user'])),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Admin restore archived report error: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to restore archived report'], 500);
         }
     }
 }

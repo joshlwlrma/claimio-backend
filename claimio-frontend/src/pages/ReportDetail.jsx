@@ -3,12 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import UserBar from '../components/UserBar';
-import { ArrowLeft, MapPin, Calendar, AlertCircle, Loader2, Image as ImageIcon, Send, CheckCircle2, Lock, Trash2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, AlertCircle, Loader2, Image as ImageIcon, Send, CheckCircle2, Lock, Trash2, Phone, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 const ReportDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, setUser } = useAuth();
 
     const [report, setReport] = useState(null);
     const [claims, setClaims] = useState([]);
@@ -24,6 +25,14 @@ const ReportDetail = () => {
 
     // Finder report state
     const [finderMessage, setFinderMessage] = useState('');
+
+    // Phone number modal state
+    const [showPhoneModal, setShowPhoneModal] = useState(false);
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [phoneSaving, setPhoneSaving] = useState(false);
+    const [phoneError, setPhoneError] = useState('');
+
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     useEffect(() => {
         fetchReportDetails();
@@ -52,6 +61,16 @@ const ReportDetail = () => {
         }
     };
 
+    // After a successful claim, check if user has phone → show modal or toast
+    const handleClaimSuccess = (message) => {
+        if (!user?.phone_number) {
+            setClaimSuccess(message);
+            setShowPhoneModal(true);
+        } else {
+            setClaimSuccess(message);
+        }
+    };
+
     const submitClaim = async (e) => {
         e.preventDefault();
         if (!proof.trim()) return;
@@ -61,9 +80,9 @@ const ReportDetail = () => {
 
         try {
             await api.post(`/reports/${id}/claims`, { proof_description: proof });
-            setClaimSuccess('Your claim has been submitted successfully!');
             setProof('');
             fetchReportDetails();
+            handleClaimSuccess('Your claim has been submitted successfully!');
         } catch (err) {
             console.error("Claim submission failed", err);
             setClaimSuccess('Failed to submit claim. Please try again.');
@@ -84,14 +103,42 @@ const ReportDetail = () => {
                 direction: 'finder_reporting_found',
                 finder_message: finderMessage 
             });
-            setClaimSuccess('Thank you! The owner has been notified.');
             setFinderMessage('');
             fetchReportDetails();
+            handleClaimSuccess('Thank you! The owner has been notified.');
         } catch (err) {
             console.error("Finder report submission failed", err);
             setClaimSuccess('Failed to submit report. Please try again.');
         } finally {
             setIsClaiming(false);
+        }
+    };
+
+    const savePhoneNumber = async () => {
+        const cleaned = phoneNumber.trim();
+        if (!cleaned) return;
+
+        // Basic PH mobile validation
+        if (!/^09\d{9}$/.test(cleaned)) {
+            setPhoneError('Please enter a valid PH mobile number (09xxxxxxxxx).');
+            return;
+        }
+
+        setPhoneSaving(true);
+        setPhoneError('');
+
+        try {
+            await api.put('/user/profile', { phone_number: cleaned });
+            setUser({ ...user, phone_number: cleaned });
+            setShowPhoneModal(false);
+            setPhoneNumber('');
+            setActionMessage('Phone number saved! You\'ll get SMS updates.');
+            setTimeout(() => setActionMessage(''), 4000);
+        } catch (err) {
+            console.error('Failed to save phone number', err);
+            setPhoneError('Failed to save. Please try again.');
+        } finally {
+            setPhoneSaving(false);
         }
     };
 
@@ -143,7 +190,12 @@ const ReportDetail = () => {
         <div className="min-h-screen bg-page font-sans pb-12">
             <UserBar />
 
-            <main className="container mx-auto px-4 py-8 max-w-6xl">
+            <motion.main
+                initial={prefersReduced ? {} : { opacity: 0, y: 20 }}
+                animate={prefersReduced ? {} : { opacity: 1, y: 0 }}
+                transition={prefersReduced ? {} : { duration: 0.4 }}
+                className="container mx-auto px-4 py-8 max-w-6xl"
+            >
 
                 {/* Back Link */}
                 <button
@@ -252,7 +304,12 @@ const ReportDetail = () => {
 
                         {/* Claim Section */}
                         {canClaim && report.type === 'found' && (
-                            <div className="bg-card rounded-2xl p-8 border border-border relative overflow-hidden">
+                            <motion.div
+                                initial={prefersReduced ? {} : { opacity: 0, y: 30 }}
+                                animate={prefersReduced ? {} : { opacity: 1, y: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className="bg-card rounded-2xl p-8 border border-border relative overflow-hidden"
+                            >
                                 <div className="absolute top-0 left-0 w-full h-1 bg-accent" />
 
                                 <h2 className="text-xl font-bold text-white mb-2 uppercase tracking-wide">Is this yours?</h2>
@@ -285,12 +342,17 @@ const ReportDetail = () => {
                                         </button>
                                     </form>
                                 )}
-                            </div>
+                            </motion.div>
                         )}
 
                         {/* Finder Report Section */}
                         {canClaim && report.type === 'lost' && !report.claims?.some(c => c.user?.id === user?.id && c.direction === 'finder_reporting_found') && (
-                            <div className="bg-card rounded-2xl p-8 border border-border relative overflow-hidden">
+                            <motion.div 
+                                initial={prefersReduced ? {} : { opacity: 0, y: 30 }}
+                                animate={prefersReduced ? {} : { opacity: 1, y: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className="bg-card rounded-2xl p-8 border border-border relative overflow-hidden"
+                            >
                                 <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500" />
 
                                 <h2 className="text-xl font-bold text-white mb-2 uppercase tracking-wide">Did you find this item?</h2>
@@ -326,7 +388,7 @@ const ReportDetail = () => {
                                         </button>
                                     </form>
                                 )}
-                            </div>
+                            </motion.div>
                         )}
 
                         {/* Login prompt */}
@@ -412,7 +474,108 @@ const ReportDetail = () => {
                     </div>
 
                 </div>
-            </main>
+            </motion.main>
+
+            {/* ─── Phone Number Modal ─── */}
+            <AnimatePresence>
+                {showPhoneModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+                    >
+                        {/* Backdrop */}
+                        <div 
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            onClick={() => setShowPhoneModal(false)}
+                        />
+
+                        {/* Modal Card */}
+                        <motion.div
+                            initial={prefersReduced ? {} : { opacity: 0, scale: 0.9, y: 20 }}
+                            animate={prefersReduced ? {} : { opacity: 1, scale: 1, y: 0 }}
+                            exit={prefersReduced ? {} : { opacity: 0, scale: 0.9, y: 20 }}
+                            transition={{ type: 'spring', duration: 0.4, bounce: 0.15 }}
+                            className="relative w-full max-w-md bg-card rounded-2xl border border-border shadow-2xl overflow-hidden"
+                        >
+                            {/* Accent bar */}
+                            <div className="h-1 bg-accent w-full" />
+
+                            <div className="p-8">
+                                {/* Close button */}
+                                <button
+                                    onClick={() => setShowPhoneModal(false)}
+                                    className="absolute top-4 right-4 text-text-muted hover:text-white transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+
+                                {/* Icon */}
+                                <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mb-5">
+                                    <Phone size={24} className="text-accent" />
+                                </div>
+
+                                <h3 className="text-xl font-bold text-white uppercase tracking-wide mb-2">
+                                    Claim Submitted!
+                                </h3>
+                                <p className="text-xl font-bold text-white uppercase tracking-wide mb-1">
+                                    Want SMS Updates?
+                                </p>
+                                <p className="text-sm text-text-muted mb-6 leading-relaxed">
+                                    Enter your mobile number to get text alerts when your claim status changes.
+                                </p>
+
+                                {/* Phone Input */}
+                                <div className="relative mb-2">
+                                    <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+                                    <input
+                                        type="tel"
+                                        value={phoneNumber}
+                                        onChange={(e) => {
+                                            setPhoneNumber(e.target.value);
+                                            setPhoneError('');
+                                        }}
+                                        placeholder="09xxxxxxxxx"
+                                        maxLength={11}
+                                        className="input-dark pl-11 w-full"
+                                    />
+                                </div>
+
+                                {/* Error */}
+                                {phoneError && (
+                                    <p className="text-red-400 text-xs mb-3 flex items-center gap-1">
+                                        <AlertCircle size={12} />
+                                        {phoneError}
+                                    </p>
+                                )}
+
+                                {/* Actions */}
+                                <div className="flex flex-col gap-3 mt-5">
+                                    <button
+                                        onClick={savePhoneNumber}
+                                        disabled={phoneSaving || !phoneNumber.trim()}
+                                        className="btn-amber w-full py-3 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {phoneSaving ? (
+                                            <Loader2 className="animate-spin mr-2" size={18} />
+                                        ) : (
+                                            <CheckCircle2 className="mr-2" size={18} />
+                                        )}
+                                        Save & Close
+                                    </button>
+                                    <button
+                                        onClick={() => setShowPhoneModal(false)}
+                                        className="text-sm text-text-muted hover:text-white transition-colors py-2 font-medium"
+                                    >
+                                        No Thanks
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

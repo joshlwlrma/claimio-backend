@@ -56,6 +56,14 @@ class ClaimController extends Controller
             ], 403);
         }
 
+        // Guard: cannot claim an archived report
+        if ($report->is_archived) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This report has been archived and is no longer accepting claims.',
+            ], 403);
+        }
+
         // Guard: report must be in a claimable status
         if (!in_array($report->status, ['pending', 'matched'])) {
             return response()->json([

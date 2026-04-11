@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import UserBar from '../components/UserBar';
-import { Mail, Shield, User, Clock, FileText, FileSearch, Loader2, Phone, Save, CheckCircle2 } from 'lucide-react';
+import { Mail, Shield, User, Clock, FileText, FileSearch, Loader2, Phone, Save, CheckCircle2, Archive } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
 
 const Profile = () => {
     const { user } = useAuth();
@@ -16,6 +17,7 @@ const Profile = () => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [phoneSaving, setPhoneSaving] = useState(false);
     const [phoneMessage, setPhoneMessage] = useState('');
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     useEffect(() => {
         const fetchProfileData = async () => {
@@ -75,7 +77,12 @@ const Profile = () => {
 
             <main className="container mx-auto px-4 py-8 max-w-5xl">
                 {/* Profile Header Card — Dark */}
-                <div className="bg-card rounded-2xl p-8 mb-8 border border-border flex flex-col items-center text-center">
+                <motion.div
+                    initial={prefersReduced ? {} : { opacity: 0, y: 20 }}
+                    animate={prefersReduced ? {} : { opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="bg-card rounded-2xl p-8 mb-8 border border-border flex flex-col items-center text-center"
+                >
                     {/* Avatar */}
                     <div className="mb-4">
                         {user?.avatar ? (
@@ -116,7 +123,7 @@ const Profile = () => {
                             <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">Claims</span>
                         </div>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Phone Number Card */}
                 <div className="bg-white rounded-xl p-6 mb-8 border border-gray-200">
@@ -186,27 +193,56 @@ const Profile = () => {
                         <p className="font-semibold uppercase tracking-wider text-sm">Loading activity...</p>
                     </div>
                 ) : (
-                    <div className="mt-4">
+                    <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeTab}
+                        initial={prefersReduced ? {} : { opacity: 0 }}
+                        animate={prefersReduced ? {} : { opacity: 1 }}
+                        exit={prefersReduced ? {} : { opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="mt-4"
+                    >
                         {activeTab === 'reports' && (
                             reports.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {reports.map((report) => (
-                                        <Link to={`/reports/${report.id}`} key={report.id} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow group flex flex-col h-full">
-                                            <div className="flex justify-between items-start mb-4">
-                                                <span className={`badge ${report.type === 'lost' ? 'badge-lost' : 'badge-found'}`}>
-                                                    {report.type}
-                                                </span>
-                                                <span className={`badge ${statusBadgeClass(report.status)}`}>
-                                                    {report.status}
-                                                </span>
-                                            </div>
-                                            <h3 className="font-bold text-lg mb-2 text-text-dark line-clamp-1 flex-grow">{report.item_name}</h3>
-                                            <div className="flex items-center text-text-muted text-xs mt-4">
-                                                <Clock size={14} className="mr-2" />
-                                                <span>{new Date(report.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                                            </div>
-                                        </Link>
-                                    ))}
+                                    {reports.map((report) => {
+                                        const isArchived = report.is_archived;
+                                        const CardWrapper = isArchived ? 'div' : Link;
+                                        const cardProps = isArchived
+                                            ? { key: report.id, className: 'bg-white border border-gray-200 rounded-xl p-6 flex flex-col h-full opacity-60 cursor-not-allowed relative' }
+                                            : { to: `/reports/${report.id}`, key: report.id, className: 'bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow group flex flex-col h-full relative' };
+
+                                        return (
+                                            <CardWrapper {...cardProps}>
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`badge ${report.type === 'lost' ? 'badge-lost' : 'badge-found'}`}>
+                                                            {report.type}
+                                                        </span>
+                                                        {isArchived && (
+                                                            <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 border border-purple-200 font-bold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider">
+                                                                <Archive size={10} />
+                                                                Archived
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className={`badge ${statusBadgeClass(report.status)}`}>
+                                                        {report.status}
+                                                    </span>
+                                                </div>
+                                                <h3 className="font-bold text-lg mb-2 text-text-dark line-clamp-1 flex-grow">{report.item_name}</h3>
+                                                <div className="flex items-center text-text-muted text-xs mt-4">
+                                                    <Clock size={14} className="mr-2" />
+                                                    <span>{new Date(report.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                                </div>
+                                                {isArchived && (
+                                                    <p className="text-[10px] text-purple-500 font-semibold uppercase tracking-wider mt-3">
+                                                        This report has been archived by an admin.
+                                                    </p>
+                                                )}
+                                            </CardWrapper>
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
@@ -291,7 +327,8 @@ const Profile = () => {
                                 </div>
                             )
                         )}
-                    </div>
+                    </motion.div>
+                    </AnimatePresence>
                 )}
             </main>
         </div>

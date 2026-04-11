@@ -38,14 +38,15 @@ class PublicReportResource extends JsonResource
                 'id' => $this->user->id,
                 'name' => $this->user->name,
             ],
+            'is_archived' => (bool) $this->is_archived,
             'images' => $this->category === 'Documents'
-            ? []
-            : $this->whenLoaded('images', function () {
-            return $this->images->map(fn($img) => [
-            'id' => $img->id,
-            'url' => $img->image_url,
-            ]);
-        }),
+                ? []
+                : $this->whenLoaded('images', function () {
+                    return $this->images->map(fn($img) => [
+                        'id' => $img->id,
+                        'url' => $img->image_url,
+                    ]);
+                }),
         ];
     }
 }
