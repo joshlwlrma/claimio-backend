@@ -146,7 +146,9 @@ const ReportDetail = () => {
     const isAdmin = user && user.role === 'admin';
     const isOwner = user && report && user.id === report.user?.id;
     const hasFullAccess = isOwner || isAdmin;
-    const canClaim = user && !isOwner && report?.status !== 'claimed' && report?.status !== 'returned';
+    const canClaim = user && 
+  !isOwner && 
+  (report?.status === 'pending' || report?.status === 'matched');
 
     const formattedDate = report?.created_at
         ? new Date(report.created_at).toLocaleDateString(undefined, {

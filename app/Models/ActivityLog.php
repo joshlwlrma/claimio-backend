@@ -33,7 +33,9 @@ class ActivityLog extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withDefault([
+            'name' => 'System'
+        ]);
     }
 
     // ──────────────────────────────────────────────
@@ -45,7 +47,7 @@ class ActivityLog extends Model
      *
      * Usage: ActivityLog::log($userId, 'report_submitted', 'Created report #5');
      */
-    public static function log(int $userId, string $actionType, ?string $description = null): static
+    public static function log(?int $userId, string $actionType, ?string $description = null): static
     {
         return static::create([
             'user_id' => $userId,
