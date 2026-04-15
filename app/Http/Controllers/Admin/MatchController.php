@@ -91,9 +91,10 @@ class MatchController extends Controller
                     "Great news! Your lost item \"{$lostReport->item_name}\" may have been found. Log in to Claimio to view the details."
                 );
 
-                if ($lostReport->contact_number) {
+                $lostPhone = $lostReport->contact_number ?: $lostReport->user->phone_number;
+                if ($lostPhone) {
                     $sms->send(
-                        $lostReport->contact_number,
+                        $lostPhone,
                         "Hi {$lostReport->user->name}! Good news - your lost item \"{$lostReport->item_name}\" may have been found on Claimio. Please log in to the portal to coordinate the return.",
                         $lostReport->user->id
                     );
@@ -108,9 +109,10 @@ class MatchController extends Controller
                     "An owner has been identified for the item \"{$foundReport->item_name}\" you reported. Log in to Claimio to view the details."
                 );
 
-                if ($foundReport->contact_number) {
+                $foundPhone = $foundReport->contact_number ?: $foundReport->user->phone_number;
+                if ($foundPhone) {
                     $sms->send(
-                        $foundReport->contact_number,
+                        $foundPhone,
                         "Hi {$foundReport->user->name}! An owner has been identified for the item \"{$foundReport->item_name}\" you found and reported on Claimio. Please log in to coordinate the return.",
                         $foundReport->user->id
                     );
