@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\PotentialMatch;
+use App\Services\NotificationService;
+use App\Services\SmsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -75,6 +77,45 @@ class MatchController extends Controller
                     'description' => "Confirmed match between Lost Report #{$match->lost_report_id} and Found Report #{$match->found_report_id} (Score: {$match->similarity_score}%)",
                 ]);
             });
+
+            // Send notifications AFTER the transaction succeeds
+            $lostReport  = $match->lostReport()->with('user')->first();
+            $foundReport = $match->foundReport()->with('user')->first();
+            $sms = app(SmsService::class);
+
+            // Notify the person who LOST the item
+            if ($lostReport->user) {
+                NotificationService::notify(
+                    $lostReport->user->id,
+                    'item_matched',
+                    "Great news! Your lost item \"{$lostReport->item_name}\" may have been found. Log in to Claimio to view the details."
+                );
+
+                if ($lostReport->contact_number) {
+                    $sms->send(
+                        $lostReport->contact_number,
+                        "Hi {$lostReport->user->name}! Good news - your lost item \"{$lostReport->item_name}\" may have been found on Claimio. Please log in to the portal to coordinate the return.",
+                        $lostReport->user->id
+                    );
+                }
+            }
+
+            // Notify the person who FOUND the item
+            if ($foundReport->user) {
+                NotificationService::notify(
+                    $foundReport->user->id,
+                    'item_matched',
+                    "An owner has been identified for the item \"{$foundReport->item_name}\" you reported. Log in to Claimio to view the details."
+                );
+
+                if ($foundReport->contact_number) {
+                    $sms->send(
+                        $foundReport->contact_number,
+                        "Hi {$foundReport->user->name}! An owner has been identified for the item \"{$foundReport->item_name}\" you found and reported on Claimio. Please log in to coordinate the return.",
+                        $foundReport->user->id
+                    );
+                }
+            }
 
             return response()->json([
                 'success' => true,
