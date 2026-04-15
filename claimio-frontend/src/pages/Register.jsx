@@ -17,7 +17,7 @@ const Register = () => {
     }, []);
 
     const handleGoogleLogin = () => {
-        window.location.href = 'http://localhost:8000/api/auth/google/redirect';
+        window.location.href = 'https://claimio.ddnsking.com/api/auth/google/redirect';
     };
 
     return (

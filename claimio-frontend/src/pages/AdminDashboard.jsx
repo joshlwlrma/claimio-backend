@@ -639,7 +639,7 @@ const AdminDashboard = () => {
                                                 <div className="space-y-2 mb-3">
                                                     <div className="flex items-center text-text-muted text-xs">
                                                         <MapPin size={12} className="mr-1" />
-                                                        {match.lost_report?.location || 'No location'}
+                                                        {match.lost_report?.campus ? `${match.lost_report.campus} - ` : ''}{match.lost_report?.location || 'No location'}
                                                     </div>
                                                     <div className="flex items-center text-text-muted text-xs">
                                                         <Calendar size={12} className="mr-1" />
@@ -663,7 +663,7 @@ const AdminDashboard = () => {
                                             {/* Match Score */}
                                             <div className="lg:col-span-2 flex lg:flex-col items-center justify-center py-4 lg:py-0">
                                                 <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center text-black font-bold text-xl mb-2">
-                                                    {match.similarity_score}%
+                                                    {(match.similarity_score * 100).toFixed(0)}%
                                                 </div>
                                                 <span className="text-xs text-text-muted uppercase tracking-wider">Match Score</span>
                                             </div>
@@ -680,7 +680,7 @@ const AdminDashboard = () => {
                                                 <div className="space-y-2 mb-3">
                                                     <div className="flex items-center text-text-muted text-xs">
                                                         <MapPin size={12} className="mr-1" />
-                                                        {match.found_report?.location || 'No location'}
+                                                        {match.found_report?.campus ? `${match.found_report.campus} - ` : ''}{match.found_report?.location || 'No location'}
                                                     </div>
                                                     <div className="flex items-center text-text-muted text-xs">
                                                         <Calendar size={12} className="mr-1" />
@@ -793,7 +793,7 @@ const AdminDashboard = () => {
                                         }
                                         const token = localStorage.getItem('claimio_token');
                                         const response = await fetch(
-                                            `http://localhost:8000/api/admin/reports/export?${params.toString()}`,
+                                            `https://claimio.ddnsking.com/api/admin/reports/export?${params.toString()}`,
                                             { headers: { Authorization: `Bearer ${token}` } }
                                         );
                                         if (!response.ok) throw new Error('Export failed');

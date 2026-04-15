@@ -209,7 +209,7 @@ class ClaimController extends Controller
                     \App\Services\NotificationService::notify($owner->id, 'item_matched', $appMsg);
 
                     if ($owner->phone_number) {
-                        $smsMsg = "Hi {$owner->name}! Good news — someone has found your lost item '{$report->item_name}'. Please visit the TIP OSA office to coordinate the handover. - Claimio";
+                        $smsMsg = "Hi {$owner->name}! Good news!  Someone has found your lost item '{$report->item_name}'. Please visit the TIP OSA office to coordinate the handover. - Claimio";
                         $smsService->send($owner->phone_number, $smsMsg, $owner->id);
                     }
                 }

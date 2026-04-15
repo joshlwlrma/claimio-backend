@@ -56,7 +56,7 @@ const UserBar = () => {
                 <div className="flex items-center gap-3">
                     <Link
                         to="/report"
-                        className="hidden md:flex items-center gap-2 btn-amber text-xs px-5 py-2"
+                        className="flex items-center gap-1 md:gap-2 btn-amber text-[10px] md:text-xs px-3 md:px-5 py-2"
                     >
                         <PlusCircle size={15} />
                         <span>Submit Item</span>

@@ -50,7 +50,7 @@ class MatchingService
                             'found_report_id' => $foundId,
                         ],
                         [
-                            'similarity_score' => $score,
+                            'similarity_score' => $score / 100,
                             'status' => 'pending',
                         ]
                     );
@@ -64,22 +64,21 @@ class MatchingService
     /**
      * Calculate similarity score between two reports.
      */
-    private function calculateScore(Report $a, Report $b): int
+private function calculateScore(Report $a, Report $b): int
     {
         $score = 0;
         $hasNameOverlap = false;
 
-        // 1. Category match (+40)
-        if ($a->category && $b->category && strtolower($a->category) === strtolower($b->category)) {
-            $score += 40;
-        }
-
-        // 2. Item name keyword overlap (up to +40)
+        // 1. Item name keyword overlap (Up to +70 points)
+        // Shifted missing category points here. Uses 'min' to avoid penalizing adjectives.
         $nameWordsA = $this->extractKeywords($a->item_name);
         $nameWordsB = $this->extractKeywords($b->item_name);
         $nameOverlap = count(array_intersect($nameWordsA, $nameWordsB));
-        $maxNameWords = max(count($nameWordsA), count($nameWordsB), 1);
-        $nameScore = (int) round(($nameOverlap / $maxNameWords) * 40);
+        
+        $minNameWords = min(count($nameWordsA), count($nameWordsB));
+        if ($minNameWords === 0) $minNameWords = 1; 
+        
+        $nameScore = (int) round(($nameOverlap / $minNameWords) * 70);
         
         if ($nameOverlap > 0) {
             $hasNameOverlap = true;
@@ -87,28 +86,31 @@ class MatchingService
         
         $score += $nameScore;
 
-        // 3. Description keyword overlap (up to +20)
+        // 2. Description keyword overlap (Up to +30 points)
+        // Uses 'min' so users aren't penalized for writing long, helpful descriptions!
         if ($a->description && $b->description) {
             $descWordsA = $this->extractKeywords($a->description);
             $descWordsB = $this->extractKeywords($b->description);
             $descOverlap = count(array_intersect($descWordsA, $descWordsB));
-            $maxDescWords = max(count($descWordsA), count($descWordsB), 1);
-            $score += (int) round(($descOverlap / $maxDescWords) * 20);
+            
+            $minDescWords = min(count($descWordsA), count($descWordsB));
+            if ($minDescWords === 0) $minDescWords = 1; 
+            
+            $score += (int) round(($descOverlap / $minDescWords) * 30);
         }
 
-        // 4. Campus match bonus (+20)
+        // 3. Campus match bonus (Still required/helpful, but doesn't break the match if missing)
         if ($a->campus && $b->campus && $a->campus === $b->campus) {
-            $score += 20;
+            $score += 10; 
         }
 
-        // Category match alone is NOT enough - require at least some item name overlap
-        if ($score >= 40 && !$hasNameOverlap) {
-            return 0; // Skip this match entirely
+        // Require at least some item name overlap to prevent random matching
+        if ($score >= 55 && !$hasNameOverlap) {
+            return 0; 
         }
 
         return min($score, 100);
     }
-
     /**
      * Extract meaningful keywords from a string.
      * Filters out common stop words and short words.

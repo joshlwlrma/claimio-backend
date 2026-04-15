@@ -37,7 +37,7 @@ class SmsService
         $formatted = $this->formatPhoneNumber($phoneNumber);
 
         if (!$formatted) {
-            Log::warning("SmsService: invalid phone number — {$phoneNumber}");
+            Log::error("SmsService: invalid phone number — {$phoneNumber}");
             
             // Log failed attempt
             SmsLog::create([
@@ -57,7 +57,7 @@ class SmsService
                     'content' => $message,
                 ]);
 
-            $success = $response->status() === 201;
+            $success = $response->successful();
 
             // Log the attempt
             SmsLog::create([
@@ -68,7 +68,7 @@ class SmsService
             ]);
 
             if (!$success) {
-                Log::warning("SmsService: API returned {$response->status()} — {$response->body()}");
+                Log::error("SmsService: API returned {$response->status()} — {$response->body()}");
             }
 
             return $success;

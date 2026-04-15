@@ -63,7 +63,7 @@ const ReportCard = ({ report }) => {
                 <p className="text-text-muted text-xs line-clamp-2 mb-4 flex-grow">
                     {report.is_sensitive && report.name_on_item 
                         ? report.name_on_item 
-                        : (report.description || 'No description available')}
+                        : (report.description)}
                 </p>
 
                 <div className="space-y-1.5">

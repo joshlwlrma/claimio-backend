@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create an Axios instance pointing to the Laravel API
 const api = axios.create({
-    baseURL: 'http://localhost:8000/api',
+    baseURL: import.meta.env.VITE_API_URL + '/api',
     headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
