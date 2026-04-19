@@ -1,0 +1,41 @@
+Steps to Install and Run Claimio:
+
+Prerequisites:
+- PHP 8.2 or higher
+- Composer
+- Node.js 18 or higher & npm
+- MySQL
+
+1. Clone the Repository:
+   git clone https://github.com/joshlwlrma/claimio-backend.git
+   cd claimio-backend
+
+2. Backend Setup (Laravel):
+   # Install PHP dependencies
+   composer install
+   
+   # Copy environment file and set up keys
+   cp .env.example .env
+   php artisan key:generate
+   
+   # IMPORTANT: Edit your .env file and add your credentials:
+   # Note: The .env file is not included for security reasons. To fully experience the website without setting up local API keys, it is recommended to use the live hosting link.
+   # Required missing keys to add in .env:
+   # - DB_DATABASE, DB_USERNAME, DB_PASSWORD
+   # - GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+   # - UNISMS_API_KEY
+   
+   # Run database migrations
+   php artisan migrate
+
+3. Frontend Setup (React):
+   cd claimio-frontend
+   npm install
+   npm run dev
+
+4. Start the Application:
+   # Open a new terminal in the root folder and run:
+   php artisan serve
+   
+   # The Backend API will be running on http://localhost:8000
+   # The Frontend UI will be running on http://localhost:5173
