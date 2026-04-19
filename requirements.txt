@@ -14,7 +14,7 @@ Prerequisites:
    # Install PHP dependencies
    composer install
    
-   # Copy environment file and set up keys
+   # Copy environment file and set up keys if possible
    cp .env.example .env
    php artisan key:generate
    
