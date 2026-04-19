@@ -23,24 +23,25 @@
 ## Steps to Install and Run Locally
 
 ### 1. Clone the Repository
-\`\`\`bash
-git clone https://github.com/joshlwlrma/claimio-backend
-cd claimio
+\`\`\`
+* git clone https://github.com/joshlwlrma/claimio-backend
+* cd claimio
 \`\`\`
 
 ### 2. Backend Setup (Laravel)
-\`\`\`bash
+\`\`\`
 # Install PHP dependencies
 composer install
 
 # Copy environment file and set up keys
-cp .env.example .env
-php artisan key:generate
+* cp .env.example .env
+* php artisan key:generate
 
 # IMPORTANT: Edit your .env file and add your credentials:
-# - DB_DATABASE, DB_USERNAME, DB_PASSWORD
-# - GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-# - UNISMS_API_KEY
+## Note that the .env file is not included for security reasons. So to fully experience the website, it is recommended to use the live hosting link.
+### - DB_DATABASE, DB_USERNAME, DB_PASSWORD
+### - GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+### - UNISMS_API_KEY
 
 
 # Run database migrations
@@ -48,16 +49,16 @@ php artisan migrate
 \`\`\`
 
 ### 3. Frontend Setup (React)
-\`\`\`bash
-cd claimio-frontend
-npm install
-npm run dev
+\`\`\`
+* cd claimio-frontend
+* npm install
+* npm run dev
 \`\`\`
 
 ### 4. Start the Application
 Open a new terminal in the root folder and run:
-\`\`\`bash
-php artisan serve
+\`\`\`
+* php artisan serve
 # The Backend will be running on http://localhost:8000
 # The Frontend will be running on http://localhost:5173
 \`\`\`
