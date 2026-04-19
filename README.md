@@ -24,7 +24,7 @@
 
 ### 1. Clone the Repository
 \`\`\`bash
-git clone [https://github.com/joshlwlrma/claimio-backend]
+git clone https://github.com/joshlwlrma/claimio-backend
 cd claimio
 \`\`\`
 
@@ -58,6 +58,6 @@ npm run dev
 Open a new terminal in the root folder and run:
 \`\`\`bash
 php artisan serve
-# The API will be running on http://localhost:8000
+# The Backend will be running on http://localhost:8000
 # The Frontend will be running on http://localhost:5173
 \`\`\`
