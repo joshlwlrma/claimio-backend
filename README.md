@@ -1,6 +1,5 @@
 # Claimio: A Secure Multi-Tier Web-Based Lost and Found System with Google OAuth Authentication and SMS Notification Integration for Academic Institutions
 
-**Live Hosting Link (AWS):** [https://claimio.ddnsking.com/]
 **Repository Link:** [https://github.com/joshlwlrma/claimio-backend]
 
 ## Tech Stack
