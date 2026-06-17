@@ -22,6 +22,7 @@ class Claim extends Model
         'user_id',
         'proof_description',
         'claim_status',
+        'decision_notes',
         'direction',
         'finder_message',
     ];

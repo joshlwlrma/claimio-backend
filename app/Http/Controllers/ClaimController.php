@@ -155,20 +155,24 @@ class ClaimController extends Controller
         }
 
         $request->validate([
-            'claim_status' => 'required|in:approved,rejected',
+            'claim_status'   => 'required|in:approved,rejected',
+            'decision_notes' => 'required|string|min:10',
         ]);
 
-        $newStatus = $request->input('claim_status');
+        $newStatus     = $request->input('claim_status');
+        $decisionNotes = $request->input('decision_notes');
 
-        DB::transaction(function () use ($claim, $newStatus, $user) {
-            $claim->update(['claim_status' => $newStatus]);
+        DB::transaction(function () use ($claim, $newStatus, $decisionNotes, $user) {
+            $claim->update([
+                'claim_status'   => $newStatus,
+                'decision_notes' => $decisionNotes,
+            ]);
 
             if ($newStatus === 'approved') {
                 if ($claim->direction === 'finder_reporting_found') {
                     // Update the parent report to "matched"
                     $claim->report->update(['status' => 'matched']);
-                }
-                else {
+                } else {
                     // Update the parent report to "claimed"
                     $claim->report->update(['status' => 'claimed']);
                 }
@@ -186,8 +190,7 @@ class ClaimController extends Controller
                     'item_matched_via_finder',
                     "Report #{$claim->report->id} '{$claim->report->item_name}' matched — finder report approved by admin"
                 );
-            }
-            else {
+            } else {
                 ActivityLog::log(
                     $user->id,
                     "claim_{$newStatus}",
@@ -213,16 +216,14 @@ class ClaimController extends Controller
                         $smsService->send($owner->phone_number, $smsMsg, $owner->id);
                     }
                 }
-            }
-            else {
+            } else {
                 // Keep existing behavior (notify CLAIMANT)
                 $claimant = $claim->user;
                 if ($claimant) {
                     if ($newStatus === 'approved') {
                         $appMsg = "Your claim for '{$report->item_name}' has been approved. Please visit the TIP OSA office to claim your item.";
                         \App\Services\NotificationService::notify($claimant->id, 'claim_approved', $appMsg);
-                    }
-                    else {
+                    } else {
                         $appMsg = "Your claim for '{$report->item_name}' was not approved. Contact TIP OSA for more details.";
                         \App\Services\NotificationService::notify($claimant->id, 'claim_rejected', $appMsg);
                     }
@@ -236,8 +237,7 @@ class ClaimController extends Controller
                     }
                 }
             }
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             // Notification failure should never block the claim action
             \Illuminate\Support\Facades\Log::error('Notification error: ' . $e->getMessage());
         }

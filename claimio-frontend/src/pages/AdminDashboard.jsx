@@ -73,6 +73,9 @@ const AdminDashboard = () => {
     
     // expand tracking
     const [expandedProofs, setExpandedProofs] = useState({});
+
+    // decision notes — keyed by claim.id so each card is independent
+    const [decisionNotes, setDecisionNotes] = useState({});
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     // ── Data Fetching ───────────────────────────────
@@ -249,9 +252,15 @@ const AdminDashboard = () => {
     };
 
     const handleClaimAction = async (claimId, action) => {
+        const notes = decisionNotes[claimId] || '';
         try {
-            await api.put(`/admin/claims/${claimId}/status`, { claim_status: action });
+            await api.put(`/admin/claims/${claimId}/status`, {
+                claim_status:   action,
+                decision_notes: notes,
+            });
             showMessage(`Claim #${claimId} ${action}.`);
+            // Clear the notes for this claim after a successful action
+            setDecisionNotes(prev => { const n = { ...prev }; delete n[claimId]; return n; });
             fetchReports(currentPage);
             fetchStats();
             if (selectedReport) {
@@ -793,7 +802,7 @@ const AdminDashboard = () => {
                                         }
                                         const token = localStorage.getItem('claimio_token');
                                         const response = await fetch(
-                                            `https://claimio.ddnsking.com/api/admin/reports/export?${params.toString()}`,
+                                            `${import.meta.env.VITE_API_URL}/api/admin/reports/export?${params.toString()}`,
                                             { headers: { Authorization: `Bearer ${token}` } }
                                         );
                                         if (!response.ok) throw new Error('Export failed');
@@ -1221,19 +1230,50 @@ const AdminDashboard = () => {
                                                     </div>
 
                                                     {claim.claim_status === 'pending' && (
-                                                        <div className="flex gap-2 justify-end mt-4 pt-4 border-t border-border/50">
-                                                            <button
-                                                                onClick={() => handleClaimAction(claim.id, 'rejected')}
-                                                                className="px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
-                                                            >
-                                                                Reject
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleClaimAction(claim.id, 'approved')}
-                                                                className="px-4 py-2 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
-                                                            >
-                                                                Approve
-                                                            </button>
+                                                        <div className="mt-4 pt-4 border-t border-border/50 space-y-3">
+                                                            {/* Decision Notes — required before approve/reject */}
+                                                            <div>
+                                                                <label className="block text-xs font-bold uppercase tracking-widest text-text-muted mb-1">
+                                                                    Decision Notes / Reason
+                                                                    <span className="text-red-400 ml-1">*</span>
+                                                                </label>
+                                                                <textarea
+                                                                    id={`decision-notes-${claim.id}`}
+                                                                    rows={3}
+                                                                    value={decisionNotes[claim.id] || ''}
+                                                                    onChange={e =>
+                                                                        setDecisionNotes(prev => ({
+                                                                            ...prev,
+                                                                            [claim.id]: e.target.value,
+                                                                        }))
+                                                                    }
+                                                                    placeholder="Provide a reason for your decision (min. 10 characters)…"
+                                                                    className="w-full bg-card border border-border text-gray-300 text-xs rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-accent transition-colors placeholder:text-text-muted/50"
+                                                                />
+                                                                {(decisionNotes[claim.id] || '').length > 0 &&
+                                                                 (decisionNotes[claim.id] || '').length < 10 && (
+                                                                    <p className="text-red-400 text-[10px] mt-1">
+                                                                        {10 - (decisionNotes[claim.id] || '').length} more character(s) needed
+                                                                    </p>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="flex gap-2 justify-end">
+                                                                <button
+                                                                    onClick={() => handleClaimAction(claim.id, 'rejected')}
+                                                                    disabled={(decisionNotes[claim.id] || '').trim().length < 10}
+                                                                    className="px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                                                >
+                                                                    Reject
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleClaimAction(claim.id, 'approved')}
+                                                                    disabled={(decisionNotes[claim.id] || '').trim().length < 10}
+                                                                    className="px-4 py-2 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                                                >
+                                                                    Approve
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>

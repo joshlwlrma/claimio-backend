@@ -18,7 +18,7 @@ const Login = () => {
     }, []);
 
     const handleGoogleLogin = () => {
-        window.location.href = 'https://claimio.ddnsking.com/api/auth/google/redirect';
+        window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google/redirect`;
     };
 
     return (

@@ -15,6 +15,7 @@ import ReportForm from './pages/ReportForm';
 import ReportDetail from './pages/ReportDetail';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard'; // Re-enabled
+import AdminVerify from './pages/AdminVerify';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -87,6 +88,7 @@ const AnimatedRoutes = () => {
           />
 
           {/* Admin Routes (admin role only) */}
+          <Route path="/admin/verify" element={withPageTrans(<AdminVerify />)} />
           <Route
             path="/admin"
             element={withPageTrans(

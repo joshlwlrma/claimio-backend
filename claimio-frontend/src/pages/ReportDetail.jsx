@@ -413,30 +413,39 @@ const ReportDetail = () => {
 
                             {report.images && report.images.length > 0 ? (
                                 <div className="space-y-3">
-                                    {report.images.map((img, i) => (
-                                        <div key={i} className="rounded-xl overflow-hidden border border-border relative">
-                                            <img
-                                                src={img.url}
-                                                alt="Report item"
-                                                className={`w-full h-auto object-cover ${report.is_sensitive && !hasFullAccess ? 'blur-md brightness-75 select-none' : ''}`}
-                                                draggable={report.is_sensitive && !hasFullAccess ? 'false' : 'true'}
-                                                onError={(e) => {
-                                                    e.target.src = '';
-                                                    e.target.parentElement.innerHTML = '<div class="w-full h-48 flex items-center justify-center text-xs text-text-muted bg-card-alt">Failed to load</div>';
-                                                }}
-                                            />
-                                            {report.is_sensitive && !hasFullAccess && (
-                                                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 z-10 pointer-events-none">
-                                                    <div className="bg-black/70 p-4 rounded-full mb-3 backdrop-blur-md">
-                                                        <Lock size={24} className="text-accent" />
+                                    {report.images.map((img, i) => {
+                                        // 'PROTECTED' is the server-sent sentinel for
+                                        // images the current user is not allowed to see.
+                                        // We never put the real URL in the DOM for these.
+                                        const isProtected = !img.url || img.url === 'PROTECTED';
+
+                                        return (
+                                            <div key={i} className="rounded-xl overflow-hidden border border-border relative">
+                                                {isProtected ? (
+                                                    // ── Protected placeholder — no real URL in the DOM ──
+                                                    <div className="w-full h-48 flex flex-col items-center justify-center text-center bg-card-alt p-4 gap-3">
+                                                        <div className="bg-black/70 p-4 rounded-full backdrop-blur-md">
+                                                            <Lock size={24} className="text-accent" />
+                                                        </div>
+                                                        <span className="text-sm font-bold text-white bg-black/70 px-4 py-2 rounded-lg backdrop-blur-md shadow-lg">
+                                                            Submit a claim to view full details
+                                                        </span>
                                                     </div>
-                                                    <span className="text-sm font-bold text-white bg-black/70 px-4 py-2 rounded-lg backdrop-blur-md shadow-lg">
-                                                        Submit a claim to view full details
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
+                                                ) : (
+                                                    // ── Real image — server already verified access ──
+                                                    <img
+                                                        src={img.url}
+                                                        alt="Report item"
+                                                        className="w-full h-auto object-cover"
+                                                        onError={(e) => {
+                                                            e.target.src = '';
+                                                            e.target.parentElement.innerHTML = '<div class="w-full h-48 flex items-center justify-center text-xs text-text-muted bg-card-alt">Failed to load</div>';
+                                                        }}
+                                                    />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <div className="border-2 border-dashed border-border rounded-xl p-12 flex flex-col items-center justify-center text-center">

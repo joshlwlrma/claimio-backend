@@ -41,10 +41,13 @@ class PublicReportResource extends JsonResource
             'is_archived' => (bool) $this->is_archived,
             'images' => $this->category === 'Documents'
                 ? []
-                : $this->whenLoaded('images', function () {
+                : $this->whenLoaded('images', function () use ($isSensitive) {
                     return $this->images->map(fn($img) => [
-                        'id' => $img->id,
-                        'url' => $img->image_url,
+                        'id'  => $img->id,
+                        // Sensitive reports: real URL is never sent to unauthenticated
+                        // or unauthorised viewers — they receive 'PROTECTED' instead.
+                        // The frontend renders a blur placeholder for this sentinel value.
+                        'url' => $isSensitive ? 'PROTECTED' : $img->image_url,
                     ]);
                 }),
         ];

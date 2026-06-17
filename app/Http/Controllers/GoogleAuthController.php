@@ -86,17 +86,57 @@ class GoogleAuthController extends Controller
             }
         }
 
-        // Step 4: Revoke any old tokens, then generate a fresh Sanctum token
+        // Step 4: Revoke any old tokens
         $user->tokens()->delete();
-        $token = $user->createToken('claimio-auth-token')->plainTextToken;
 
-        // Step 5: Redirect to the frontend with token in the URL
-        $frontendUrl = env('FRONTEND_URL', '/demo.html');
+        $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+
+        if ($user->role === 'admin') {
+            // Admin users get a temporary token and are redirected to the PIN entry screen
+            $tempToken = $user->createToken('admin-verify', ['admin:verify'], now()->addMinutes(5))->plainTextToken;
+            $query = http_build_query([
+                'status' => 'admin_verification_required',
+                'temp_token' => $tempToken,
+            ]);
+            return redirect($frontendUrl . '?' . $query);
+        }
+
+        // Student users get their full token immediately
+        $token = $user->createToken('claimio-auth-token')->plainTextToken;
         $query = http_build_query([
             'token' => $token,
             'name' => $user->name,
         ]);
 
         return redirect($frontendUrl . '?' . $query);
+    }
+
+    /**
+     * Secondary verification step for admin users.
+     * Validates a 6-digit PIN and exchanges the temporary token for a full token.
+     */
+    public function verifyAdmin(\Illuminate\Http\Request $request)
+    {
+        $request->validate(['pin' => 'required|string|size:6']);
+
+        $user = $request->user();
+
+        // Ensure they are authenticated with an admin-verify token
+        if (!$user || !$user->currentAccessToken()->can('admin:verify')) {
+            return response()->json(['message' => 'Invalid or expired temporary token.'], 401);
+        }
+
+        if ($request->pin !== env('ADMIN_PIN')) {
+            return response()->json(['message' => 'Invalid PIN.'], 403);
+        }
+
+        // Verification successful: revoke temp token and issue full token
+        $user->currentAccessToken()->delete();
+        $token = $user->createToken('claimio-auth-token')->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user' => $user
+        ]);
     }
 }

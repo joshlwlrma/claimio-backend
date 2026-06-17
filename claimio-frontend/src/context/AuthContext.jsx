@@ -18,6 +18,13 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const urlToken = params.get('token');
+        const status = params.get('status');
+        const tempToken = params.get('temp_token');
+
+        if (status === 'admin_verification_required' && tempToken) {
+            navigate(`/admin/verify?temp_token=${tempToken}`, { replace: true });
+            return;
+        }
 
         if (urlToken) {
             // We just logged in via Google OAuth

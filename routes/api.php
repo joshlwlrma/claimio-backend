@@ -6,6 +6,7 @@ use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ClaimController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\ReportImageController;
 
 use App\Http\Controllers\Admin\MatchController;
 
@@ -14,17 +15,16 @@ use App\Http\Controllers\Admin\MatchController;
 // ───────────────────────────────────────────────
 
 // Google OAuth
-Route::get('/auth/google/redirect', [GoogleAuthController::class , 'redirect'])
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])
+    ->middleware('throttle:5,1')
     ->name('auth.google.redirect');
-Route::get('/auth/google/callback', [GoogleAuthController::class , 'callback'])
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])
     ->name('auth.google.callback');
 
 // Public report browsing (returns PublicReportResource — no description)
-Route::get('/reports', [ReportController::class , 'index'])->name('reports.index');
-Route::get('/reports/{report}', [ReportController::class , 'show'])->name('reports.show');
+Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+Route::get('/reports/{report}', [ReportController::class, 'show'])->name('reports.show');
 
-// Public claim viewing (see who claimed a report)
-Route::get('/reports/{report}/claims', [ClaimController::class , 'index'])->name('claims.index');
 
 // ───────────────────────────────────────────────
 // Protected Routes (require valid Sanctum token)
@@ -32,10 +32,15 @@ Route::get('/reports/{report}/claims', [ClaimController::class , 'index'])->name
 
 Route::middleware('auth:sanctum')->group(function () {
     // Authenticated user
-    Route::get('/user', function (Request $request) {
+    Route::get(
+        '/user',
+        function (Request $request) {
             return $request->user();
         }
     )->name('api.user');
+
+    // Admin verification (exchanges temp token for full token)
+    Route::post('/auth/admin/verify', [GoogleAuthController::class, 'verifyAdmin'])->name('auth.admin.verify');
 
     // User's own profile routes
     Route::get('/user/reports', [\App\Http\Controllers\ProfileController::class, 'reports'])->name('user.reports');
@@ -43,17 +48,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user/profile', [\App\Http\Controllers\ProfileController::class, 'updateProfile'])->name('user.profile.update');
 
     // Reports — create, update, delete
-    Route::post('/reports', [ReportController::class , 'store'])->name('reports.store');
-    Route::put('/reports/{report}', [ReportController::class , 'update'])->name('reports.update');
-    Route::delete('/reports/{report}', [ReportController::class , 'destroy'])->name('reports.destroy');
+    Route::post('/reports', [ReportController::class, 'store'])->middleware('throttle:10,1')->name('reports.store');
+    Route::put('/reports/{report}', [ReportController::class, 'update'])->name('reports.update');
+    Route::delete('/reports/{report}', [ReportController::class, 'destroy'])->name('reports.destroy');
 
     // Notifications
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/read', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
     Route::post('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markRead'])->name('notifications.markRead');
 
-    // Claims — submit a claim on a report
-    Route::post('/reports/{report}/claims', [ClaimController::class , 'store'])->name('claims.store');
+    // Claims — view claims on a report (auth required) and submit a claim
+    Route::get('/reports/{report}/claims', [ClaimController::class, 'index'])->name('claims.index');
+    Route::post('/reports/{report}/claims', [ClaimController::class, 'store'])->middleware('throttle:5,1')->name('claims.store');
+
+    // Protected image serving — enforces sensitivity access control server-side
+    Route::get('/reports/{report}/image/{image}', [ReportImageController::class, 'show'])->name('reports.image.show');
 });
 
 // ───────────────────────────────────────────────
@@ -62,13 +71,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
     // Dashboard stats
-    Route::get('/stats', [AdminController::class , 'stats'])->name('admin.stats');
+    Route::get('/stats', [AdminController::class, 'stats'])->name('admin.stats');
 
     // Full report listing (admin sees everything)
-    Route::get('/reports', [AdminController::class , 'reports'])->name('admin.reports');
+    Route::get('/reports', [AdminController::class, 'reports'])->name('admin.reports');
 
     // Update report status (pending → matched → claimed → returned)
-    Route::put('/reports/{report}/status', [AdminController::class , 'updateReportStatus'])
+    Route::put('/reports/{report}/status', [AdminController::class, 'updateReportStatus'])
         ->name('admin.reports.update-status');
 
     // Mark as Returned
@@ -88,10 +97,10 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
         ->name('admin.reports.restore-archived');
 
     // CSV export
-    Route::get('/reports/export', [AdminController::class , 'export'])->name('admin.reports.export');
+    Route::get('/reports/export', [AdminController::class, 'export'])->name('admin.reports.export');
 
     // Approve or reject a claim
-    Route::put('/claims/{claim}/status', [ClaimController::class , 'updateStatus'])
+    Route::put('/claims/{claim}/status', [ClaimController::class, 'updateStatus'])
         ->name('admin.claims.update-status');
 
     // Claims history (admin)
