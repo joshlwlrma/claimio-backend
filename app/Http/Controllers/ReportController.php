@@ -171,7 +171,7 @@ class ReportController extends Controller
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
                     $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
-                    $path = $image->storeAs('reports', $filename, 'public');
+                    $path = $image->storeAs('reports', $filename, 'local');
 
                     ReportImage::create([
                         'report_id' => $report->id,
@@ -228,7 +228,7 @@ class ReportController extends Controller
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
                     $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
-                    $path = $image->storeAs('reports', $filename, 'public');
+                    $path = $image->storeAs('reports', $filename, 'local');
 
                     ReportImage::create([
                         'report_id' => $report->id,
@@ -244,7 +244,7 @@ class ReportController extends Controller
                     ->get();
 
                 foreach ($imagesToRemove as $img) {
-                    Storage::disk('public')->delete($img->image_path);
+                    Storage::disk('local')->delete($img->image_path);
                     $img->delete();
                 }
             }
@@ -285,7 +285,7 @@ class ReportController extends Controller
         DB::transaction(function () use ($report, $user) {
             // 1. Delete images from disk
             foreach ($report->images as $img) {
-                Storage::disk('public')->delete($img->image_path);
+                Storage::disk('local')->delete($img->image_path);
             }
 
             // 2. Log before deleting (so we have the report data)

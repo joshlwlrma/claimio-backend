@@ -60,10 +60,16 @@ Route::middleware('auth:sanctum')->group(function () {
     // Claims — view claims on a report (auth required) and submit a claim
     Route::get('/reports/{report}/claims', [ClaimController::class, 'index'])->name('claims.index');
     Route::post('/reports/{report}/claims', [ClaimController::class, 'store'])->middleware('throttle:5,1')->name('claims.store');
-
-    // Protected image serving — enforces sensitivity access control server-side
-    Route::get('/reports/{report}/image/{image}', [ReportImageController::class, 'show'])->name('reports.image.show');
 });
+
+// ───────────────────────────────────────────────
+// Protected Image Serving (Signed URLs)
+// ───────────────────────────────────────────────
+// Uses the 'signed' middleware instead of auth:sanctum so that standard <img> 
+// tags can load it without requiring crossOrigin credentials.
+Route::get('/reports/{report}/image/{image}', [ReportImageController::class, 'show'])
+    ->middleware('signed')
+    ->name('reports.image.show');
 
 // ───────────────────────────────────────────────
 // Admin Routes (auth:sanctum + admin middleware)

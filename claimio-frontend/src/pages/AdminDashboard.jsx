@@ -975,6 +975,11 @@ const AdminDashboard = () => {
                                                         <span className={`text-xs font-bold uppercase px-3 py-1 rounded-full ${CLAIM_COLORS[claim.claim_status] || 'bg-gray-500/20 text-gray-400'}`}>
                                                             {claim.claim_status}
                                                         </span>
+                                                        {claim.decision_notes && (claim.claim_status === 'approved' || claim.claim_status === 'rejected') && (
+                                                            <div className="mt-2 text-xs text-text-muted italic whitespace-normal max-w-[150px]">
+                                                                Reason: {claim.decision_notes}
+                                                            </div>
+                                                        )}
                                                     </td>
                                                     <td className="px-4 py-3 text-text-muted text-xs">
                                                         {new Date(claim.created_at).toLocaleDateString()}

@@ -310,6 +310,12 @@ const Profile = () => {
                                                         Not approved — contact OSA for details
                                                     </div>
                                                 )}
+                                                {claim.decision_notes && (claim.claim_status === 'approved' || claim.claim_status === 'rejected') && (
+                                                    <div className="mt-2 text-xs text-text-muted italic text-center border-t border-gray-100 pt-2">
+                                                        <span className="font-semibold block mb-1">Decision Note:</span>
+                                                        {claim.decision_notes}
+                                                    </div>
+                                                )}
                                             </div>
                                         </Link>
                                     ))}

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 
 /**
  * ReportImage Model
@@ -55,6 +56,12 @@ class ReportImage extends Model
             return null;
         }
 
-        return Storage::disk('public')->url($this->image_path);
+        // Generate a signed URL that expires in 1 hour. 
+        // This acts as cryptographic proof of authorization.
+        return URL::temporarySignedRoute(
+            'reports.image.show',
+            now()->addHours(1),
+            ['report' => $this->report_id, 'image' => $this->id]
+        );
     }
 }
